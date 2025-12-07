@@ -1,0 +1,525 @@
+---
+title: "Portfolio Domain Management: How Studios Handle Hundreds of Domains"
+description: "Manage hundreds of domains effortlessly. Learn how startup studios and agencies scale domain operations programmatically."
+date: "2026-05-14"
+author: "Builder Domains Team"
+tags: ["portfolio-management", "startup-studios", "scale"]
+---
+
+# Portfolio Domain Management: How Studios Handle Hundreds of Domains
+
+Startup studios launch dozens of MVPs quarterly. Agencies manage hundreds of client projects. Traditional domain management breaks at this scale. Here's how builder.domains enables portfolio-scale operations.
+
+## The Portfolio Challenge
+
+```typescript
+// Traditional domain management at scale
+const traditionalPain = {
+  domains: 200,
+  monthlyNewDomains: 15,
+
+  timePerDomain: '1 hour',  // Registration, config, SSL
+  monthlyTimeSpent: '15 hours',
+  annualTimeSpent: '180 hours',
+
+  costPerDomain: '$15/year',
+  annualCost: '$3000',
+  unutilizedDomains: '60%',  // Wasted spend
+  wastedCost: '$1800',
+
+  complexity: {
+    multipleRegistrars: 5,
+    spreadsheets: 3,
+    expiry_tracking: 'manual',
+    renewals: 'inconsistent',
+    dns_configs: 'scattered'
+  },
+
+  problem: 'UNMANAGEABLE'
+};
+```
+
+## Portfolio-First Architecture
+
+```typescript
+import { BuilderDomains } from '@builder-domains/sdk';
+
+class DomainPortfolio {
+  private client: BuilderDomains;
+
+  async initialize() {
+    this.client = new BuilderDomains({
+      apiKey: process.env.BUILDER_KEY
+    });
+  }
+
+  // Claim domains in batch
+  async claimBatch(projects: Project[]) {
+    const domains = await Promise.all(
+      projects.map(project =>
+        this.client.claim({
+          subdomain: project.slug,
+          metadata: {
+            project_id: project.id,
+            founder: project.founder,
+            vertical: project.vertical,
+            status: 'active'
+          }
+        })
+      )
+    );
+
+    // 50 domains claimed in < 30 seconds
+    return domains;
+  }
+
+  // Get portfolio overview
+  async getPortfolio() {
+    const domains = await this.client.listDomains();
+
+    return {
+      total: domains.length,
+      active: domains.filter(d => d.status === 'active').length,
+      upgraded: domains.filter(d => d.customDomain).length,
+      traffic: domains.reduce((sum, d) => sum + d.traffic, 0),
+      cost: this.calculateCost(domains)
+    };
+  }
+}
+```
+
+## Batch Operations
+
+### Bulk Claiming
+
+```bash
+# Claim 100 domains from CSV
+$ cat projects.csv | builder-domains claim-batch
+
+project-1,
+project-2,
+project-3,
+...
+project-100
+
+✓ 100 domains claimed in 45 seconds
+✓ All configured with SSL
+✓ Ready to deploy
+```
+
+### Bulk Configuration
+
+```typescript
+// Configure all domains consistently
+async function configurePortfolio(domains: Domain[]) {
+  const config = {
+    ssl: 'auto',
+    monitoring: true,
+    security: {
+      hsts: true,
+      headers: 'strict'
+    }
+  };
+
+  await Promise.all(
+    domains.map(domain => domain.configure(config))
+  );
+
+  console.log(`Configured ${domains.length} domains`);
+}
+```
+
+### Bulk Updates
+
+```python
+# Update all staging domains
+async def update_staging_domains():
+    domains = await client.list_domains(tags=['staging'])
+
+    for domain in domains:
+        await domain.update({
+            'target': NEW_STAGING_URL,
+            'auth': {
+                'type': 'basic',
+                'users': STAGING_USERS
+            }
+        })
+
+    print(f"Updated {len(domains)} staging domains")
+```
+
+## Organization and Tagging
+
+```typescript
+// Organize domains with tags and metadata
+await client.claim('my-project', {
+  tags: ['active', 'saas', 'b2b'],
+  metadata: {
+    founder: 'jane@email.com',
+    vertical: 'fintech',
+    stage: 'mvp',
+    cohort: 'Q1-2026',
+    budget: 'bootstrapped'
+  }
+});
+
+// Query by tags
+const fintechDomains = await client.listDomains({
+  tags: ['fintech'],
+  status: 'active'
+});
+
+const matureDomains = await client.listDomains({
+  metadata: { stage: 'growth' }
+});
+```
+
+## Automated Lifecycle Management
+
+```typescript
+class LifecycleManager {
+  async managePortfolio() {
+    const domains = await client.listDomains();
+
+    for (const domain of domains) {
+      const metrics = await domain.getMetrics();
+
+      // Graduated to custom domain?
+      if (metrics.monthlyRevenue > 1000 && !domain.customDomain) {
+        await this.suggestUpgrade(domain);
+      }
+
+      // No activity for 90 days?
+      if (metrics.daysSinceLastVisit > 90 && domain.traffic < 10) {
+        await this.suggestArchive(domain);
+      }
+
+      // High traffic but still free?
+      if (metrics.requestsPerDay > 10000) {
+        await this.suggestUpgrade(domain);
+      }
+    }
+  }
+
+  async archiveInactiveDomains() {
+    const inactive = await client.listDomains({
+      lastVisit: { before: '90 days ago' },
+      traffic: { max: 10 }
+    });
+
+    for (const domain of inactive) {
+      await domain.archive({
+        reason: 'inactive',
+        notify: domain.metadata.founder,
+        restoreable: true
+      });
+    }
+
+    console.log(`Archived ${inactive.length} inactive domains`);
+  }
+}
+```
+
+## Portfolio Analytics
+
+```typescript
+// Comprehensive portfolio insights
+async function getPortfolioAnalytics() {
+  const portfolio = await client.getPortfolioAnalytics({
+    period: '30d'
+  });
+
+  return {
+    overview: {
+      totalDomains: portfolio.total,
+      activeDomains: portfolio.active,
+      totalTraffic: portfolio.traffic,
+      totalRevenue: portfolio.revenue
+    },
+
+    performance: {
+      topDomains: portfolio.topByTraffic.slice(0, 10),
+      fastestGrowing: portfolio.growthRate.slice(0, 10),
+      mostRevenue: portfolio.topByRevenue.slice(0, 10)
+    },
+
+    health: {
+      uptimeAverage: portfolio.uptime.average,
+      latencyAverage: portfolio.latency.p95,
+      errorRate: portfolio.errors.rate
+    },
+
+    costs: {
+      currentMonthly: portfolio.costs.current,
+      projected: portfolio.costs.projected,
+      byProject: portfolio.costs.breakdown
+    }
+  };
+}
+```
+
+## Multi-Team Management
+
+```typescript
+// Team-based access control
+class TeamManagement {
+  async setupTeams() {
+    // Create teams
+    const engineering = await client.createTeam({
+      name: 'Engineering',
+      permissions: ['claim', 'configure', 'deploy', 'release']
+    });
+
+    const operations = await client.createTeam({
+      name: 'Operations',
+      permissions: ['view', 'monitor', 'analyze']
+    });
+
+    const founders = await client.createTeam({
+      name: 'Founders',
+      permissions: ['all']
+    });
+
+    // Assign domains to teams
+    await client.assignDomains({
+      team: engineering.id,
+      domains: await client.listDomains({ tags: ['active'] })
+    });
+
+    // Team members can only access their domains
+    return { engineering, operations, founders };
+  }
+}
+```
+
+## Cost Optimization
+
+```typescript
+// Automatically optimize portfolio costs
+class CostOptimizer {
+  async optimizePortfolio() {
+    const domains = await client.listDomains();
+    let savings = 0;
+
+    for (const domain of domains) {
+      const metrics = await domain.getMetrics();
+
+      // Downgrade unused premium features
+      if (metrics.traffic < 100 && domain.tier === 'premium') {
+        await domain.downgrade('free');
+        savings += 10; // $10/month per domain
+      }
+
+      // Release truly dead domains
+      if (metrics.daysSinceLastVisit > 180) {
+        await domain.release();
+        savings += 15; // $15/year
+      }
+
+      // Optimize CDN for low-traffic domains
+      if (metrics.traffic < 1000 && domain.cdn === 'global') {
+        await domain.configure({ cdn: 'regional' });
+        savings += 5;
+      }
+    }
+
+    console.log(`Optimized portfolio. Annual savings: $${savings}`);
+    return savings;
+  }
+}
+```
+
+## Reporting and Compliance
+
+```typescript
+// Generate portfolio reports
+async function generateMonthlyReport() {
+  const domains = await client.listDomains();
+
+  const report = {
+    month: '2026-05',
+    summary: {
+      totalDomains: domains.length,
+      newDomains: domains.filter(d => d.createdAt > '2026-05-01').length,
+      releasedDomains: 12,
+      upgradedDomains: 3
+    },
+
+    traffic: {
+      total: domains.reduce((sum, d) => sum + d.traffic, 0),
+      average: domains.reduce((sum, d) => sum + d.traffic, 0) / domains.length,
+      topDomains: domains.sort((a, b) => b.traffic - a.traffic).slice(0, 10)
+    },
+
+    revenue: {
+      generated: domains.reduce((sum, d) => sum + (d.revenue || 0), 0),
+      byDomain: domains.filter(d => d.revenue > 0)
+    },
+
+    health: {
+      uptime: '99.94%',
+      incidents: 2,
+      resolved: 2
+    },
+
+    costs: {
+      infrastructure: 0, // Free tier
+      upgrades: 36,      // 3 custom domains
+      total: 36
+    }
+  };
+
+  // Export to PDF, CSV, or dashboard
+  await exportReport(report, 'pdf');
+  return report;
+}
+```
+
+## API Integrations
+
+```typescript
+// Integrate with startup studio tools
+class StudioIntegration {
+  async syncWithAirtable() {
+    // Get projects from Airtable
+    const projects = await airtable.getProjects();
+
+    for (const project of projects) {
+      // Ensure domain exists
+      const domain = await client.claim(project.slug, {
+        metadata: {
+          airtable_id: project.id,
+          founder: project.founder,
+          status: project.status
+        }
+      });
+
+      // Update Airtable with domain URL
+      await airtable.updateProject(project.id, {
+        domain: domain.fqdn,
+        url: `https://${domain.fqdn}`
+      });
+    }
+  }
+
+  async syncWithNotion() {
+    // Similar integration with Notion
+    const pages = await notion.getDatabases();
+    // ... sync logic
+  }
+
+  async syncWithLinear() {
+    // Track domain changes in Linear
+    const issues = await linear.getIssues({ label: 'infrastructure' });
+    // ... sync logic
+  }
+}
+```
+
+## Automated Monitoring
+
+```typescript
+// Monitor entire portfolio health
+class PortfolioMonitor {
+  async monitorAll() {
+    const domains = await client.listDomains({ status: 'active' });
+
+    const results = await Promise.all(
+      domains.map(async (domain) => {
+        const health = await domain.healthCheck();
+
+        if (!health.ok) {
+          await this.handleIssue(domain, health);
+        }
+
+        return {
+          domain: domain.fqdn,
+          status: health.ok ? 'healthy' : 'issues',
+          uptime: health.uptime,
+          latency: health.latency,
+          errors: health.errors
+        };
+      })
+    );
+
+    // Send daily digest
+    await this.sendDigest(results);
+
+    return results;
+  }
+
+  async handleIssue(domain: Domain, health: Health) {
+    if (health.ssl_expiring) {
+      await domain.renewSSL();
+    }
+
+    if (health.uptime < 0.99) {
+      await this.alert({
+        severity: 'HIGH',
+        domain: domain.fqdn,
+        issue: 'Low uptime',
+        uptime: health.uptime
+      });
+    }
+
+    if (health.latency > 1000) {
+      await domain.enableCDN();
+    }
+  }
+}
+```
+
+## Best Practices
+
+```typescript
+const portfolioBestPractices = {
+  organization: {
+    useConsistentNaming: true,
+    tagEverything: true,
+    documentMetadata: true,
+    regularAudits: 'monthly'
+  },
+
+  lifecycle: {
+    autoArchiveInactive: '90 days',
+    reviewPortfolioMonthly: true,
+    upgradeWhenValidated: true,
+    releaseUnused: true
+  },
+
+  security: {
+    enableMonitoring: 'all domains',
+    regularSecurityScans: 'weekly',
+    updateConfigs: 'automated',
+    alertOnAnomalies: true
+  },
+
+  costs: {
+    optimizeRegularly: 'monthly',
+    upgradeOnlyWhenNeeded: true,
+    releaseDeadDomains: true,
+    trackROI: true
+  },
+
+  automation: {
+    useAPI: 'for everything',
+    batchOperations: true,
+    scheduledMaintenance: true,
+    integrateTools: true
+  }
+};
+```
+
+## Conclusion
+
+Managing hundreds of domains requires:
+
+- **Batch operations** (claim, configure, update in parallel)
+- **Organization** (tags, metadata, teams)
+- **Automation** (lifecycle, monitoring, optimization)
+- **Analytics** (portfolio insights, reporting)
+- **Integrations** (Airtable, Notion, Linear)
+
+Builder.domains is built for portfolio-scale operations. Manage 10 domains or 10,000 with the same ease.
+
+**Scale your domain portfolio:** [builder.domains](https://builder.domains)

@@ -1,0 +1,566 @@
+---
+title: "From Demo to Production: The Upgrade Path from Free to Custom Domains"
+description: "Navigate the journey from free demo domain to custom production domain. Learn when and how to upgrade for maximum impact."
+date: "2026-04-02"
+author: "Builder Domains Team"
+tags: ["upgrade-path", "custom-domains", "production"]
+---
+
+# From Demo to Production: The Upgrade Path from Free to Custom Domains
+
+Every successful product starts as an experiment. Builder.domains provides free domains for experimentation, but when should you upgrade to a custom domain? More importantly, how do you upgrade without breaking your existing users?
+
+## The Validation Journey
+
+```
+Idea → Demo (free) → Beta (free) → Launch (consider upgrade) → Growth (upgrade) → Scale (custom)
+```
+
+### Stage 1: Idea/Demo
+
+**Use: Free builder.domains subdomain**
+
+```bash
+$ builder-domains claim my-app-demo
+
+✓ Live at: https://my-app-demo.build
+```
+
+**Why free is perfect:**
+- Zero commitment
+- Instant setup
+- Share with early testers
+- Validate concept quickly
+
+**Don't upgrade yet if:**
+- No users yet
+- Still iterating rapidly
+- Unclear product-market fit
+- Haven't monetized
+
+### Stage 2: Beta/MVP
+
+**Use: Free builder.domains subdomain**
+
+```bash
+$ builder-domains claim my-app
+
+✓ Live at: https://my-app.build
+```
+
+**Why still free:**
+- Focus on product, not branding
+- Easy to pivot
+- Users expect beta domains
+- Save money for development
+
+**Don't upgrade yet if:**
+- < 100 active users
+- No revenue
+- High churn rate
+- Frequent major changes
+
+### Stage 3: Launch
+
+**Consider: Custom domain**
+
+```bash
+$ builder-domains upgrade my-app --to myapp.com
+
+✓ Custom domain: https://myapp.com
+✓ Redirects: my-app.build → myapp.com
+✓ SSL: Automatically migrated
+```
+
+**Upgrade signals:**
+- First paying customers
+- 100+ active users
+- Stable feature set
+- Ready for marketing push
+- Professional image matters
+
+**Cost/benefit analysis:**
+```javascript
+const launchMetrics = {
+  users: 150,
+  revenue: 500, // monthly
+  customDomainCost: 12, // annual
+  brandingValue: 'high',
+  decision: 'UPGRADE'
+};
+```
+
+### Stage 4: Growth
+
+**Use: Custom domain**
+
+**Why upgrade is essential:**
+- Credibility with customers
+- Easier to remember
+- Better SEO
+- Email addresses (hello@myapp.com)
+- Professional contracts
+
+**Typical upgrade timing:**
+```typescript
+interface UpgradeSignals {
+  revenue: number;        // > $1000/month
+  users: number;          // > 500 active
+  team: number;           // > 1 person
+  retention: number;      // > 40%
+  raised_funding: boolean; // Any funding
+}
+
+function shouldUpgrade(signals: UpgradeSignals): boolean {
+  return (
+    signals.revenue > 1000 ||
+    signals.users > 500 ||
+    signals.team > 1 ||
+    signals.raised_funding
+  );
+}
+```
+
+### Stage 5: Scale
+
+**Use: Custom domain + infrastructure**
+
+```bash
+$ builder-domains upgrade my-app --to myapp.com --plan enterprise
+
+✓ Custom domain: https://myapp.com
+✓ SLA: 99.99% uptime
+✓ Dedicated support
+✓ Advanced analytics
+✓ Priority DNS
+```
+
+**Enterprise features needed:**
+- High traffic (> 1M requests/month)
+- Enterprise customers require SLA
+- Multi-region deployment
+- Advanced security requirements
+- Compliance certifications
+
+## The Upgrade Process
+
+### Step 1: Plan the Migration
+
+```typescript
+class UpgradePlanner {
+  async planUpgrade(currentDomain: string, targetDomain: string) {
+    // Analyze current usage
+    const analysis = await builderDomains.analyzeDomain(currentDomain);
+
+    return {
+      currentUsers: analysis.activeUsers,
+      currentTraffic: analysis.requestsPerDay,
+      existingIntegrations: analysis.integrations,
+      estimatedDowntime: '0 seconds', // Zero-downtime migration
+      migrationSteps: [
+        'Purchase custom domain',
+        'Configure DNS',
+        'Test custom domain',
+        'Enable redirects',
+        'Update documentation',
+        'Notify users (optional)',
+        'Monitor traffic'
+      ],
+      estimatedDuration: '30 minutes',
+      reversible: true
+    };
+  }
+}
+```
+
+### Step 2: Execute Zero-Downtime Migration
+
+```bash
+# Purchase and configure custom domain
+$ builder-domains upgrade my-app \
+  --to myapp.com \
+  --preserve-old-domain \
+  --auto-redirect \
+  --migration-strategy gradual
+
+Upgrade Plan:
+├── Purchase domain: myapp.com
+├── Configure DNS automatically
+├── Provision SSL certificate
+├── Test custom domain
+├── Enable redirect: my-app.build → myapp.com
+├── Gradual traffic migration: 10% → 50% → 100%
+└── Monitor for issues
+
+Proceed? (y/n): y
+
+✓ Domain purchased: myapp.com
+✓ DNS configured
+✓ SSL active
+✓ Testing... all tests passed
+✓ Redirect enabled (301)
+✓ Traffic migration: 10%...
+
+Monitoring traffic for 1 hour...
+
+✓ Traffic migration: 50%...
+✓ Traffic migration: 100%
+
+Migration complete!
+- New domain: https://myapp.com
+- Old domain: Redirects to new (will maintain for 90 days)
+- Downtime: 0 seconds
+```
+
+### Step 3: Update Integrations
+
+```typescript
+// Automated integration updates
+async function updateIntegrations(oldDomain: string, newDomain: string) {
+  const integrations = await getIntegrations(oldDomain);
+
+  for (const integration of integrations) {
+    switch (integration.type) {
+      case 'oauth':
+        await updateOAuthRedirects(integration, newDomain);
+        break;
+
+      case 'webhook':
+        // Keep old webhooks working during transition
+        await addWebhookEndpoint(integration, newDomain);
+        break;
+
+      case 'api_key':
+        // API keys work with both domains during transition
+        await enableDualDomain(integration);
+        break;
+
+      case 'embed':
+        // Provide migration guide for embeds
+        await generateEmbedMigrationGuide(integration, newDomain);
+        break;
+    }
+  }
+}
+```
+
+### Step 4: Update Documentation
+
+```markdown
+# Automatic documentation update
+
+## Migration Notice
+
+We've upgraded to our custom domain!
+
+**Old URL:** https://my-app.build (redirects automatically)
+**New URL:** https://myapp.com
+
+### What you need to do:
+- **Web users:** Nothing! Automatic redirect
+- **API users:** Update base URL from `my-app.build` to `myapp.com`
+- **OAuth apps:** Update redirect URLs in your OAuth settings
+- **Webhooks:** Update to new domain (old domain supported for 90 days)
+
+### Migration timeline:
+- **Now:** Both domains work
+- **Next 90 days:** Gradual transition
+- **After 90 days:** Old domain redirects permanently
+```
+
+### Step 5: Monitor Migration
+
+```typescript
+class MigrationMonitor {
+  async monitorUpgrade(oldDomain: string, newDomain: string) {
+    const metrics = {
+      oldDomainTraffic: [],
+      newDomainTraffic: [],
+      errors: [],
+      redirects: []
+    };
+
+    // Monitor for 7 days
+    for (let day = 0; day < 7; day++) {
+      const dailyMetrics = await getDailyMetrics({
+        oldDomain,
+        newDomain
+      });
+
+      metrics.oldDomainTraffic.push(dailyMetrics.old.requests);
+      metrics.newDomainTraffic.push(dailyMetrics.new.requests);
+      metrics.errors.push(dailyMetrics.errors);
+      metrics.redirects.push(dailyMetrics.redirects);
+
+      // Alert on issues
+      if (dailyMetrics.errors > 100) {
+        await alert('High error rate during migration');
+      }
+
+      if (dailyMetrics.old.requests > dailyMetrics.new.requests * 2) {
+        await alert('Users not migrating to new domain');
+      }
+    }
+
+    return metrics;
+  }
+}
+```
+
+## Upgrade Strategies
+
+### Strategy 1: Instant Cutover
+
+```typescript
+// Best for: Small user base, no critical integrations
+await builderDomains.upgrade({
+  from: 'my-app.build',
+  to: 'myapp.com',
+  strategy: 'instant',
+  redirect: true
+});
+
+// Old domain redirects immediately
+// Single point of migration
+```
+
+**Pros:**
+- Simple
+- Fast
+- Clean cutover
+
+**Cons:**
+- Potential breaking changes for API users
+- No rollback window
+
+### Strategy 2: Gradual Migration
+
+```typescript
+// Best for: Larger user base, critical applications
+await builderDomains.upgrade({
+  from: 'my-app.build',
+  to: 'myapp.com',
+  strategy: 'gradual',
+  phases: [
+    { percent: 10, duration: '24h' },
+    { percent: 50, duration: '48h' },
+    { percent: 100, duration: 'forever' }
+  ]
+});
+
+// Traffic gradually shifts
+// Monitor each phase
+```
+
+**Pros:**
+- Safe
+- Monitorable
+- Rollback possible
+
+**Cons:**
+- Takes longer
+- More complex
+
+### Strategy 3: Dual-Running
+
+```typescript
+// Best for: Enterprise applications, zero tolerance for issues
+await builderDomains.upgrade({
+  from: 'my-app.build',
+  to: 'myapp.com',
+  strategy: 'dual',
+  duration: '90d'
+});
+
+// Both domains fully functional
+// Users migrate at their own pace
+```
+
+**Pros:**
+- Zero breaking changes
+- Users self-migrate
+- Maximum safety
+
+**Cons:**
+- Maintain two domains
+- Longer transition
+- Higher cost during transition
+
+## Communication Strategy
+
+### Before Upgrade
+
+```typescript
+// Notify users of upcoming change
+async function announceUpgrade() {
+  await sendEmail({
+    to: allUsers,
+    subject: 'Exciting news: We\'re getting a custom domain!',
+    body: `
+      We're upgrading to myapp.com!
+
+      What this means for you:
+      - Better branding
+      - Easier to remember
+      - Same great product
+
+      Timeline:
+      - April 1: New domain goes live
+      - April 1-30: Both domains work
+      - May 1: Automatic redirect from old domain
+
+      Action needed:
+      - Web users: None (automatic redirect)
+      - API users: Update to myapp.com before May 1
+      - OAuth apps: Update redirect URLs
+
+      Questions? Reply to this email.
+    `
+  });
+
+  await postBlog({
+    title: 'Upgrading to myapp.com',
+    content: `
+      Detailed migration guide...
+      FAQ...
+      Support contact...
+    `
+  });
+}
+```
+
+### During Upgrade
+
+```typescript
+// Real-time status
+await updateStatusPage({
+  status: 'migrating',
+  message: 'Domain upgrade in progress - no expected downtime',
+  updates: [
+    { time: '10:00', message: 'Starting migration' },
+    { time: '10:05', message: 'DNS configured' },
+    { time: '10:10', message: 'SSL active' },
+    { time: '10:15', message: 'Traffic migration: 10%' },
+    { time: '10:30', message: 'Traffic migration: 50%' },
+    { time: '11:00', message: 'Traffic migration: 100%' },
+    { time: '11:05', message: 'Migration complete!' }
+  ]
+});
+```
+
+### After Upgrade
+
+```typescript
+// Success announcement
+await sendEmail({
+  to: allUsers,
+  subject: 'We\'ve moved to myapp.com!',
+  body: `
+    Our domain upgrade is complete!
+
+    New URL: https://myapp.com
+
+    Everything is working normally. If you bookmarked the old domain,
+    it will automatically redirect.
+
+    For API users: Please update your base URL to myapp.com
+
+    Thank you for your patience!
+  `
+});
+```
+
+## Cost Analysis
+
+### ROI Calculator
+
+```typescript
+interface UpgradeROI {
+  costs: {
+    domain: 12,           // Annual domain registration
+    time: 50,             // Setup time (1 hour @ $50/hr)
+    communication: 20,    // Email campaigns, etc
+    total: 82
+  },
+
+  benefits: {
+    branding: 1000,       // Estimated brand value increase
+    credibility: 500,     // Easier to close deals
+    seo: 200,             // Better search rankings
+    retention: 300,       // Users take you more seriously
+    total: 2000
+  },
+
+  roi: (2000 - 82) / 82, // 2,239% ROI
+  paybackPeriod: '1 week'
+}
+```
+
+### When NOT to Upgrade
+
+```typescript
+const dontUpgradeIf = {
+  noUsers: true,              // < 10 active users
+  noRevenue: true,            // $0 revenue
+  stillPivoting: true,        // Changing direction frequently
+  multipleProjects: true,     // Testing many ideas
+  temporaryProject: true,     // Short-term experiment
+
+  // Better to spend money on:
+  betterUse: [
+    'Customer acquisition',
+    'Product development',
+    'Team hiring'
+  ]
+};
+```
+
+## Advanced Upgrade Patterns
+
+### Multi-Brand Strategy
+
+```typescript
+// One product, multiple brands
+await builderDomains.upgrade({
+  from: 'my-app.build',
+  to: [
+    { domain: 'myapp.com', region: 'US', default: true },
+    { domain: 'myapp.co.uk', region: 'UK' },
+    { domain: 'myapp.de', region: 'DE' }
+  ],
+  routing: 'geo-aware'
+});
+
+// Users automatically routed to regional domain
+```
+
+### White-Label Upgrades
+
+```typescript
+// Customers get their own domains
+async function enableWhiteLabel(customer) {
+  await builderDomains.addCustomerDomain({
+    customer: customer.id,
+    domain: customer.customDomain, // app.customer.com
+    baseDomain: 'my-app.build',
+    sslManagement: 'automatic'
+  });
+
+  // Customer accesses via their domain
+  // Powered by your infrastructure
+}
+```
+
+## Conclusion
+
+The upgrade path from free to custom domains should be:
+
+- **Frictionless:** Zero downtime, automatic migration
+- **Reversible:** Can roll back if issues
+- **Gradual:** Option for phased migration
+- **Communicative:** Keep users informed
+- **Value-driven:** Upgrade when it makes business sense
+
+Builder.domains makes upgrading as easy as claiming your first domain. When you're ready to level up, we're ready to help.
+
+**Ready to upgrade?** [builder.domains/upgrade](https://builder.domains)

@@ -1,0 +1,655 @@
+---
+title: "Domains as Code: Managing Your Entire Domain Portfolio in Git"
+description: "Infrastructure as code for domains. Manage your entire domain portfolio with version control, code review, and automated deployments."
+date: "2026-05-28"
+author: "Builder Domains Team"
+tags: ["infrastructure-as-code", "gitops", "devops"]
+---
+
+# Domains as Code: Managing Your Entire Domain Portfolio in Git
+
+Infrastructure as code transformed how we manage servers and deployments. Now it's time for domains. Manage your entire domain portfolio in Git with version control, code review, and automated deployments.
+
+## The Vision: Domains as Code
+
+```yaml
+# domains.yml - Your entire domain infrastructure
+version: 2
+
+domains:
+  - name: my-app
+    tld: .build
+
+    routes:
+      - subdomain: '@'
+        target: ${VERCEL_PRODUCTION_URL}
+
+      - subdomain: 'api'
+        target: ${RAILWAY_API_URL}
+
+      - subdomain: 'admin'
+        target: ${ADMIN_PANEL_URL}
+        auth:
+          type: basic
+          users: ${ADMIN_USERS}
+
+    wildcard:
+      enabled: true
+      pattern: '*.my-app.build'
+      routing: tenant-aware
+
+    security:
+      ssl: auto
+      hsts: true
+      headers: strict
+      rate_limiting: 1000/minute
+
+    monitoring:
+      uptime: true
+      latency: true
+      ssl_expiry: true
+```
+
+Deploy with:
+
+```bash
+$ git commit -m "Add admin subdomain"
+$ git push
+
+# GitHub Actions automatically applies changes
+✓ Domain configuration updated
+✓ Changes live globally in 5 seconds
+```
+
+## File Structure
+
+```bash
+my-company/
+├── .github/
+│   └── workflows/
+│       └── deploy-domains.yml
+├── domains/
+│   ├── production/
+│   │   ├── my-app.yml
+│   │   ├── api-service.yml
+│   │   └── marketing-site.yml
+│   ├── staging/
+│   │   ├── my-app-staging.yml
+│   │   └── api-staging.yml
+│   └── development/
+│       └── *.dev.yml
+├── templates/
+│   ├── saas-app.yml
+│   ├── api-service.yml
+│   └── static-site.yml
+└── scripts/
+    ├── validate.sh
+    ├── deploy.sh
+    └── rollback.sh
+```
+
+## Configuration Syntax
+
+### Basic Domain
+
+```yaml
+# domains/production/my-app.yml
+name: my-app
+tld: .build
+
+routes:
+  - subdomain: '@'
+    target: https://my-deployment.vercel.app
+
+ssl: auto
+monitoring: true
+```
+
+### Complex Multi-Service
+
+```yaml
+# domains/production/platform.yml
+name: platform
+tld: .build
+
+routes:
+  # Main app
+  - subdomain: '@'
+    target: ${VERCEL_URL}
+    cache_ttl: 3600
+
+  # API
+  - subdomain: 'api'
+    target: ${RAILWAY_URL}
+    rate_limiting:
+      requests_per_minute: 10000
+      burst: 20000
+    cors:
+      origins: ['https://platform.build', 'https://app.platform.build']
+      methods: [GET, POST, PUT, DELETE]
+
+  # Admin
+  - subdomain: 'admin'
+    target: ${ADMIN_URL}
+    auth:
+      type: oauth
+      provider: google
+      allowed_domains: ['mycompany.com']
+
+  # Docs
+  - subdomain: 'docs'
+    target: https://docs-generator.vercel.app
+    cache_ttl: 86400  # 24 hours
+
+  # Status page
+  - subdomain: 'status'
+    target: https://status.io/platform
+
+# Multi-tenant wildcard
+wildcard:
+  enabled: true
+  pattern: '*.platform.build'
+  target: ${VERCEL_URL}
+  headers:
+    X-Tenant-Subdomain: ${subdomain}
+
+# Security
+security:
+  ssl:
+    type: auto
+    hsts: true
+    grade: A+
+  headers:
+    csp: "default-src 'self'; script-src 'self' 'unsafe-inline'"
+    x_frame_options: DENY
+  rate_limiting:
+    default: 1000/minute
+    authenticated: 10000/minute
+
+# Monitoring
+monitoring:
+  uptime: true
+  latency: true
+  ssl_expiry: true
+  traffic: true
+
+alerts:
+  - type: downtime
+    channel: slack
+    webhook: ${SLACK_WEBHOOK_URL}
+
+  - type: high_latency
+    threshold: 1000ms
+    channel: pagerduty
+    key: ${PAGERDUTY_KEY}
+```
+
+## Templates
+
+### SaaS Application Template
+
+```yaml
+# templates/saas-app.yml
+version: 2
+
+domains:
+  production:
+    name: ${APP_NAME}
+    tld: .build
+
+    routes:
+      - subdomain: '@'
+        target: ${PRODUCTION_URL}
+      - subdomain: 'api'
+        target: ${API_URL}
+      - subdomain: 'admin'
+        target: ${ADMIN_URL}
+        auth:
+          type: oauth
+          provider: google
+
+    wildcard:
+      enabled: true
+      pattern: '*.${APP_NAME}.build'
+
+  staging:
+    name: ${APP_NAME}-staging
+    tld: .build
+    routes:
+      - subdomain: '@'
+        target: ${STAGING_URL}
+    auth:
+      type: basic
+      users: ${STAGING_USERS}
+```
+
+Use template:
+
+```bash
+$ builder-domains apply \
+    --template saas-app.yml \
+    --var APP_NAME=my-startup \
+    --var PRODUCTION_URL=$VERCEL_URL
+```
+
+## GitOps Workflow
+
+### GitHub Actions Integration
+
+```yaml
+# .github/workflows/deploy-domains.yml
+name: Deploy Domains
+
+on:
+  push:
+    branches: [main]
+    paths: ['domains/**']
+  pull_request:
+    paths: ['domains/**']
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate Configuration
+        run: |
+          builder-domains validate domains/**/*.yml
+
+      - name: Check for Breaking Changes
+        run: |
+          builder-domains diff \
+            --current production \
+            --proposed domains/production/*.yml
+
+  preview:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate Preview
+        run: |
+          builder-domains preview \
+            --files domains/production/*.yml \
+            --comment-on-pr
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: validate
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy Configuration
+        run: |
+          builder-domains apply domains/production/*.yml \
+            --token ${{ secrets.BUILDER_TOKEN }}
+
+      - name: Verify Deployment
+        run: |
+          builder-domains verify \
+            --domains domains/production/*.yml \
+            --timeout 30s
+
+      - name: Notify Success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -d '{"text":"Domain configuration deployed successfully"}'
+```
+
+### Pull Request Preview
+
+```bash
+# PR #123 opened
+$ git diff main...feature-branch domains/
+
+# GitHub Actions comments on PR:
+```
+
+**Domain Configuration Changes**
+
+Files changed: `domains/production/my-app.yml`
+
+Changes:
+- ✓ Added `admin` subdomain → https://admin.my-app.build
+- ✓ Updated API rate limit: 1000/min → 10000/min
+- ⚠ Warning: Rate limit increase may affect costs
+
+Preview: https://my-app-pr-123.dev.build
+
+Validation: ✓ Passed
+Security: ✓ No issues
+Breaking changes: ✓ None
+
+```
+```
+
+## Version Control Benefits
+
+### History and Rollback
+
+```bash
+# View domain configuration history
+$ git log --oneline domains/production/my-app.yml
+
+a1b2c3d Add admin subdomain
+d4e5f6g Update API rate limits
+g7h8i9j Enable wildcard routing
+j0k1l2m Initial configuration
+
+# Rollback to previous version
+$ git revert a1b2c3d
+$ git push
+
+# Domain reverts automatically
+```
+
+### Code Review
+
+```bash
+# PR review flow
+Developer: Creates PR with domain changes
+Reviewer: Reviews YAML configuration
+CI: Validates configuration
+CI: Shows preview deployment
+Reviewer: Approves
+CI: Deploys to production automatically
+```
+
+### Branching Strategy
+
+```bash
+# Git branching for domains
+main                    # Production domains
+├── staging             # Staging domains
+├── feature/api-v2      # Feature-specific domains
+└── hotfix/rate-limit   # Emergency fixes
+
+# Each branch has own domain configuration
+# Merged to main → deployed to production
+```
+
+## Configuration Validation
+
+```typescript
+// Validate domain configuration
+class ConfigValidator {
+  async validate(config: DomainConfig) {
+    const errors = [];
+
+    // Required fields
+    if (!config.name) {
+      errors.push('Domain name required');
+    }
+
+    // Valid subdomains
+    for (const route of config.routes) {
+      if (!this.isValidSubdomain(route.subdomain)) {
+        errors.push(`Invalid subdomain: ${route.subdomain}`);
+      }
+    }
+
+    // Target URLs
+    for (const route of config.routes) {
+      if (!this.isValidURL(route.target)) {
+        errors.push(`Invalid target: ${route.target}`);
+      }
+    }
+
+    // Security settings
+    if (config.security?.ssl === 'manual' && !config.security.certificate) {
+      errors.push('SSL certificate required for manual mode');
+    }
+
+    // Rate limits
+    if (config.security?.rate_limiting) {
+      if (!this.isValidRateLimit(config.security.rate_limiting)) {
+        errors.push('Invalid rate limit format');
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+}
+```
+
+## Terraform Integration
+
+```hcl
+# terraform/domains.tf
+terraform {
+  required_providers {
+    builderdomains = {
+      source = "builder-domains/builderdomains"
+      version = "~> 1.0"
+    }
+  }
+}
+
+provider "builderdomains" {
+  api_key = var.builder_domains_api_key
+}
+
+# Production domain
+resource "builderdomains_domain" "production" {
+  subdomain = "my-app"
+  tld       = ".build"
+
+  ssl {
+    type       = "auto"
+    hsts       = true
+  }
+
+  monitoring {
+    uptime     = true
+    latency    = true
+    ssl_expiry = true
+  }
+}
+
+# Production routes
+resource "builderdomains_route" "production_main" {
+  domain_id = builderdomains_domain.production.id
+  subdomain = "@"
+  target    = var.vercel_production_url
+}
+
+resource "builderdomains_route" "production_api" {
+  domain_id = builderdomains_domain.production.id
+  subdomain = "api"
+  target    = var.railway_api_url
+
+  rate_limiting {
+    requests_per_minute = 10000
+    burst              = 20000
+  }
+}
+
+# Staging domain
+resource "builderdomains_domain" "staging" {
+  subdomain = "my-app-staging"
+  tld       = ".build"
+
+  auth {
+    type  = "basic"
+    users = var.staging_users
+  }
+}
+
+# Output URLs
+output "production_url" {
+  value = "https://${builderdomains_domain.production.fqdn}"
+}
+
+output "staging_url" {
+  value = "https://${builderdomains_domain.staging.fqdn}"
+}
+```
+
+Deploy with Terraform:
+
+```bash
+$ terraform init
+$ terraform plan
+$ terraform apply
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+Outputs:
+production_url = "https://my-app.build"
+staging_url = "https://my-app-staging.build"
+```
+
+## Environment Management
+
+```yaml
+# Base configuration
+# domains/base.yml
+defaults:
+  security:
+    ssl: auto
+    hsts: true
+    headers: strict
+  monitoring:
+    uptime: true
+    latency: true
+
+# Production overrides
+# domains/production/overrides.yml
+extends: ../base.yml
+
+overrides:
+  monitoring:
+    alerts:
+      - type: downtime
+        channel: pagerduty
+  security:
+    rate_limiting: 10000/minute
+
+# Staging overrides
+# domains/staging/overrides.yml
+extends: ../base.yml
+
+overrides:
+  auth:
+    type: basic
+    users: ${STAGING_USERS}
+  monitoring:
+    alerts:
+      - type: downtime
+        channel: slack
+```
+
+## Testing
+
+```typescript
+// Test domain configuration
+describe('Domain Configuration', () => {
+  it('should validate production config', async () => {
+    const config = await loadConfig('domains/production/my-app.yml');
+    const validation = await validateConfig(config);
+
+    expect(validation.valid).toBe(true);
+    expect(validation.errors).toHaveLength(0);
+  });
+
+  it('should have required routes', async () => {
+    const config = await loadConfig('domains/production/my-app.yml');
+
+    expect(config.routes).toContainEqual(
+      expect.objectContaining({ subdomain: '@' })
+    );
+    expect(config.routes).toContainEqual(
+      expect.objectContaining({ subdomain: 'api' })
+    );
+  });
+
+  it('should have SSL enabled', async () => {
+    const config = await loadConfig('domains/production/my-app.yml');
+
+    expect(config.security.ssl).toBe('auto');
+    expect(config.security.hsts).toBe(true);
+  });
+});
+```
+
+## Documentation Generation
+
+```bash
+# Generate documentation from configuration
+$ builder-domains docs generate domains/production/*.yml
+
+# Output: README.md
+```
+
+**Domain Infrastructure Documentation**
+
+## Production Domains
+
+### my-app.build
+- **URL:** https://my-app.build
+- **SSL:** Automatic (A+ rating)
+- **Monitoring:** Enabled
+- **Routes:**
+  - `/` → Vercel Production
+  - `/api` → Railway API (10k req/min)
+  - `/admin` → Admin Panel (OAuth protected)
+
+### api-service.build
+- **URL:** https://api-service.build
+- **Purpose:** Public API
+- **Rate Limiting:** 100k req/min
+- **Documentation:** https://api-service.build/docs
+
+```
+```
+
+## Best Practices
+
+```yaml
+best_practices:
+  organization:
+    - Separate files by environment
+    - Use templates for common patterns
+    - Document all custom configurations
+
+  version_control:
+    - Commit all changes to Git
+    - Require PR reviews for production
+    - Tag releases for rollback points
+
+  automation:
+    - Validate on every PR
+    - Auto-deploy from main branch
+    - Run tests before deployment
+
+  security:
+    - Store secrets in environment variables
+    - Never commit API keys
+    - Use least-privilege access
+
+  monitoring:
+    - Enable monitoring on all domains
+    - Set up alerts for critical domains
+    - Review metrics regularly
+```
+
+## Conclusion
+
+Domains as code enables:
+
+- **Version control** (Git history, rollback, branching)
+- **Code review** (PR workflow for domain changes)
+- **Automation** (CI/CD for domain deployment)
+- **Testing** (Validate before deploy)
+- **Documentation** (Configuration as documentation)
+
+Treat domains as code. Version, review, test, and deploy like any other infrastructure.
+
+**Manage domains with Git:** [builder.domains](https://builder.domains)

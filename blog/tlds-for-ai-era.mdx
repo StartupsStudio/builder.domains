@@ -1,0 +1,517 @@
+---
+title: "TLDs for the AI Era: .build, .dev.build, .api.build Explained"
+description: "Modern TLDs designed for builders and AI agents. Understand .build, .dev.build, and .api.build domains for the 2026 web."
+date: "2026-04-30"
+author: "Builder Domains Team"
+tags: ["tlds", "domain-names", "web3"]
+---
+
+# TLDs for the AI Era: .build, .dev.build, .api.build Explained
+
+Traditional TLDs (.com, .org, .net) were designed for a different web. In 2026, builders and AI agents need TLDs that signal purpose, enable instant provisioning, and support autonomous systems.
+
+## The Problem with Traditional TLDs
+
+```
+.com = Commercial (but everything is commercial now)
+.org = Organization (but startups use it too)
+.net = Network (nobody knows what this means)
+.io = Input/Output (overused by startups)
+.ai = Artificial Intelligence (expensive, squatted)
+
+Problems:
+- Generic meaning
+- Expensive registration
+- Name squatting
+- Slow provisioning
+- Human-centric process
+```
+
+## The builder.domains TLD Strategy
+
+### .build - For Builders
+
+**Purpose:** Primary domain for products, services, and startups
+
+```bash
+$ builder-domains claim my-startup --tld .build
+
+Live at: https://my-startup.build
+```
+
+**Who uses .build:**
+- Startups building MVPs
+- Side projects
+- SaaS applications
+- Developer tools
+- Creative projects
+
+**Characteristics:**
+- Free for experimentation
+- Instant provisioning
+- Upgrade to custom domain later
+- Perfect for testing ideas
+
+**Examples:**
+```
+https://task-manager.build
+https://ai-analytics.build
+https://team-collab.build
+https://api-monitor.build
+```
+
+### .dev.build - For Development Environments
+
+**Purpose:** Development, staging, and preview environments
+
+```bash
+$ builder-domains claim my-app --tld .dev.build
+
+Live at: https://my-app.dev.build
+```
+
+**Who uses .dev.build:**
+- Development servers
+- Staging environments
+- Feature branches
+- Testing environments
+- Internal tools
+
+**Characteristics:**
+- Clearly indicates non-production
+- Auto-cleanup options
+- Short-lived by default
+- Perfect for CI/CD
+
+**Examples:**
+```
+https://my-app-pr-123.dev.build
+https://feature-auth.dev.build
+https://staging-v2.dev.build
+https://test-integration.dev.build
+```
+
+### .api.build - For APIs and Services
+
+**Purpose:** Backend services, APIs, microservices
+
+```bash
+$ builder-domains claim my-service --tld .api.build
+
+Live at: https://my-service.api.build
+```
+
+**Who uses .api.build:**
+- REST APIs
+- GraphQL endpoints
+- Microservices
+- Webhooks
+- AI agent services
+
+**Characteristics:**
+- Semantic meaning (clearly an API)
+- CORS-friendly
+- Machine-to-machine communication
+- Perfect for service meshes
+
+**Examples:**
+```
+https://user-service.api.build
+https://payment-api.api.build
+https://ml-inference.api.build
+https://webhook-handler.api.build
+```
+
+## Use Cases by TLD
+
+### Building a Full Product
+
+```typescript
+// Complete domain architecture
+const productDomains = {
+  // Production (free initially)
+  production: {
+    domain: 'my-saas.build',
+    purpose: 'Customer-facing application',
+    tld: '.build'
+  },
+
+  // Development
+  development: {
+    domain: 'my-saas.dev.build',
+    purpose: 'Development environment',
+    tld: '.dev.build'
+  },
+
+  // API
+  api: {
+    domain: 'my-saas.api.build',
+    purpose: 'Backend API',
+    tld: '.api.build'
+  },
+
+  // Later: Upgrade production to custom
+  upgraded: {
+    domain: 'mysaas.com',
+    purpose: 'Custom branded domain',
+    tld: '.com'
+  }
+};
+```
+
+### CI/CD Pipeline
+
+```yaml
+# GitHub Actions with semantic TLDs
+name: Deploy
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy based on branch
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            # Production
+            DOMAIN="my-app.build"
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            # Staging
+            DOMAIN="my-app.dev.build"
+          else
+            # Feature branch
+            BRANCH=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')
+            DOMAIN="$BRANCH.dev.build"
+          fi
+
+          builder-domains claim $DOMAIN --connect $DEPLOYMENT_URL
+```
+
+### Microservices Architecture
+
+```typescript
+// Each service gets semantic domain
+const microservices = {
+  auth: 'auth.api.build',
+  users: 'users.api.build',
+  payments: 'payments.api.build',
+  notifications: 'notifications.api.build',
+  analytics: 'analytics.api.build',
+
+  // Web frontend
+  web: 'my-app.build',
+
+  // Admin panel
+  admin: 'admin.my-app.build',
+
+  // Development
+  staging: 'staging.dev.build'
+};
+```
+
+## TLD Comparison Matrix
+
+```typescript
+interface TLDComparison {
+  // Traditional TLDs
+  '.com': {
+    cost: '$12-50/year',
+    availability: 'LOW (mostly taken)',
+    provisioning: '24-48 hours',
+    target: 'Commercial entities',
+    api_first: false,
+    instant: false
+  },
+
+  '.io': {
+    cost: '$35-60/year',
+    availability: 'MEDIUM',
+    provisioning: '24-48 hours',
+    target: 'Tech startups',
+    api_first: false,
+    instant: false,
+    note: 'Overused, losing meaning'
+  },
+
+  '.ai': {
+    cost: '$80-200/year',
+    availability: 'LOW (heavily squatted)',
+    provisioning: '24-48 hours',
+    target: 'AI companies',
+    api_first: false,
+    instant: false
+  },
+
+  // builder.domains TLDs
+  '.build': {
+    cost: 'FREE (upgrade available)',
+    availability: 'HIGH',
+    provisioning: '< 5 seconds',
+    target: 'Builders, startups, products',
+    api_first: true,
+    instant: true
+  },
+
+  '.dev.build': {
+    cost: 'FREE',
+    availability: 'HIGH',
+    provisioning: '< 5 seconds',
+    target: 'Development environments',
+    api_first: true,
+    instant: true
+  },
+
+  '.api.build': {
+    cost: 'FREE',
+    availability: 'HIGH',
+    provisioning: '< 5 seconds',
+    target: 'APIs, services, agents',
+    api_first: true,
+    instant: true
+  }
+}
+```
+
+## Semantic Benefits
+
+### Clear Communication
+
+```bash
+# Anyone knows what these are immediately
+https://my-app.build          # A builder's product
+https://my-app.dev.build      # Development environment
+https://my-service.api.build  # An API
+
+# vs unclear traditional TLDs
+https://my-app.io             # What is this?
+https://my-app.dev            # Is this production?
+https://my-app.com            # Could be anything
+```
+
+### SEO and Discovery
+
+```typescript
+// Search engines understand semantic TLDs
+const seoValue = {
+  '.build': {
+    signals: ['in development', 'new product', 'builder project'],
+    ranking: 'Good for "new" and "beta" searches'
+  },
+
+  '.api.build': {
+    signals: ['API endpoint', 'developer tool', 'integration'],
+    ranking: 'Excellent for API documentation searches'
+  },
+
+  '.dev.build': {
+    signals: ['development', 'testing', 'staging'],
+    ranking: 'Excluded from production search results (good!)'
+  }
+};
+```
+
+## Migration Paths
+
+### From .build to Custom Domain
+
+```bash
+# Start with .build for validation
+$ builder-domains claim my-saas --tld .build
+
+# Get traction, upgrade to custom
+$ builder-domains upgrade my-saas --to mysaas.com
+
+✓ Upgraded to: https://mysaas.com
+✓ Redirect: my-saas.build → mysaas.com
+✓ Keep both active for 90 days
+```
+
+### Multi-TLD Strategy
+
+```typescript
+// Use different TLDs for different purposes
+class TLDStrategy {
+  async setup() {
+    // Production (free to start)
+    await builderDomains.claim('my-app', { tld: '.build' });
+
+    // Development
+    await builderDomains.claim('my-app', { tld: '.dev.build' });
+
+    // API
+    await builderDomains.claim('my-app', { tld: '.api.build' });
+
+    // Later: Add custom domain
+    await builderDomains.upgrade({
+      from: 'my-app.build',
+      to: 'myapp.com'
+    });
+
+    // Result: 4 domains for complete infrastructure
+    return {
+      production: 'myapp.com',
+      productionOld: 'my-app.build', // Auto-redirects
+      development: 'my-app.dev.build',
+      api: 'my-app.api.build'
+    };
+  }
+}
+```
+
+## Advanced TLD Patterns
+
+### Environment-Specific Routing
+
+```typescript
+// Route based on TLD
+const router = {
+  '.build': {
+    target: PRODUCTION_DEPLOYMENT,
+    analytics: true,
+    caching: 'aggressive'
+  },
+
+  '.dev.build': {
+    target: STAGING_DEPLOYMENT,
+    analytics: false,
+    caching: 'disabled',
+    auth: 'required'
+  },
+
+  '.api.build': {
+    target: API_DEPLOYMENT,
+    rate_limiting: true,
+    cors: 'enabled',
+    docs: 'auto_generate'
+  }
+};
+```
+
+### Multi-Region TLDs
+
+```bash
+# Geographic routing with TLDs
+us.my-app.build → US deployment
+eu.my-app.build → EU deployment
+asia.my-app.build → Asia deployment
+
+# API regions
+us.my-api.api.build → US API
+eu.my-api.api.build → EU API
+```
+
+## Security Considerations
+
+### TLD-Based Security Policies
+
+```typescript
+const securityPolicies = {
+  '.build': {
+    ssl: 'required',
+    hsts: true,
+    cors: 'same-origin',
+    csp: 'strict'
+  },
+
+  '.dev.build': {
+    ssl: 'required',
+    hsts: true,
+    cors: 'permissive', // For testing
+    csp: 'relaxed',     // For debugging
+    auth: 'basic'       // Protect from public
+  },
+
+  '.api.build': {
+    ssl: 'required',
+    hsts: true,
+    cors: 'configured', // CORS headers
+    rate_limiting: true,
+    api_key: 'required'
+  }
+};
+```
+
+## Future TLDs
+
+```typescript
+// Potential future TLDs
+const futureTLDs = {
+  '.agent.build': {
+    purpose: 'AI agent services',
+    target: 'Autonomous agents',
+    example: 'data-analyzer.agent.build'
+  },
+
+  '.test.build': {
+    purpose: 'Automated testing',
+    target: 'E2E test environments',
+    example: 'integration-tests.test.build'
+  },
+
+  '.demo.build': {
+    purpose: 'Product demos',
+    target: 'Sales, marketing',
+    example: 'sales-demo.demo.build'
+  },
+
+  '.local.build': {
+    purpose: 'Local development tunnels',
+    target: 'Localhost exposure',
+    example: 'my-laptop.local.build'
+  }
+};
+```
+
+## Best Practices
+
+### Naming Conventions
+
+```bash
+# Good examples
+$ builder-domains claim invoice-generator --tld .build
+$ builder-domains claim invoice-api --tld .api.build
+$ builder-domains claim invoice-staging --tld .dev.build
+
+# Avoid
+$ builder-domains claim api --tld .build  # Too generic
+$ builder-domains claim my-site --tld .api.build  # Wrong TLD for purpose
+$ builder-domains claim prod --tld .dev.build  # Contradictory
+```
+
+### TLD Selection Guide
+
+```python
+def select_tld(purpose):
+    if purpose == 'customer_facing_product':
+        return '.build'  # Main product
+
+    elif purpose in ['api', 'microservice', 'backend']:
+        return '.api.build'  # Backend service
+
+    elif purpose in ['development', 'staging', 'testing']:
+        return '.dev.build'  # Non-production
+
+    elif purpose == 'professional_branding':
+        return '.com'  # After validation, upgrade
+
+    elif purpose == 'ai_agent_service':
+        return '.api.build'  # Agents as services
+
+    else:
+        return '.build'  # Default for builders
+```
+
+## Conclusion
+
+Modern TLDs should:
+
+- **Communicate purpose** (.build, .dev.build, .api.build)
+- **Enable instant provisioning** (no 24-48 hour wait)
+- **Support AI agents** (API-first access)
+- **Start free** (upgrade when validated)
+- **Scale with your business** (from free to custom)
+
+Builder.domains TLDs are designed for the 2026 web: instant, semantic, and builder-first.
+
+**Choose the right TLD for your project:** [builder.domains](https://builder.domains)

@@ -1,0 +1,707 @@
+---
+title: "Wildcard Subdomains for Multi-Tenant Apps: A Technical Deep Dive"
+description: "Master wildcard subdomains for multi-tenant SaaS. Learn the technical architecture, routing strategies, and security considerations."
+date: "2026-03-05"
+author: "Builder Domains Team"
+tags: ["wildcard-dns", "multi-tenant", "saas-architecture"]
+---
+
+# Wildcard Subdomains for Multi-Tenant Apps: A Technical Deep Dive
+
+Multi-tenant SaaS architecture has become the standard for modern applications. Each customer gets their own subdomain: `acme.yourapp.com`, `widgets.yourapp.com`, `tech-corp.yourapp.com`. But how do you provision thousands of subdomains without manual DNS configuration?
+
+The answer: wildcard DNS with intelligent routing.
+
+## The Multi-Tenant Subdomain Challenge
+
+Traditional DNS configuration for multi-tenant apps:
+
+```bash
+# Customer 1 signs up
+$ add-dns-record "acme.yourapp.com" "A" "1.2.3.4"
+
+# Customer 2 signs up
+$ add-dns-record "widgets.yourapp.com" "A" "1.2.3.4"
+
+# Customer 3 signs up
+$ add-dns-record "tech-corp.yourapp.com" "A" "1.2.3.4"
+
+# Customer 1000 signs up
+# ... this doesn't scale
+```
+
+**Problems:**
+- Manual DNS records for each customer
+- DNS propagation delays (24-48 hours per customer)
+- API rate limits from DNS providers
+- Complex orchestration logic
+- No way to automate at scale
+
+## Wildcard DNS Solution
+
+```dns
+# Single wildcard record
+*.yourapp.build    IN    A    1.2.3.4
+
+# Now every subdomain works immediately:
+# acme.yourapp.build → 1.2.3.4
+# widgets.yourapp.build → 1.2.3.4
+# any-subdomain.yourapp.build → 1.2.3.4
+```
+
+**Benefits:**
+- One DNS configuration for unlimited subdomains
+- Instant provisioning (no DNS propagation per customer)
+- Scales to millions of tenants
+- Fully automated
+
+## Technical Architecture
+
+### Layer 1: DNS Resolution
+
+```typescript
+// Wildcard DNS configuration
+const domain = await builderDomains.claim('my-saas');
+
+await domain.enableWildcard({
+  pattern: '*.my-saas.build',
+  target: 'lb.my-infrastructure.com', // Load balancer
+  ssl: 'auto' // Wildcard SSL certificate
+});
+
+// All subdomains now resolve:
+// customer1.my-saas.build → lb.my-infrastructure.com
+// customer2.my-saas.build → lb.my-infrastructure.com
+// customer999.my-saas.build → lb.my-infrastructure.com
+```
+
+### Layer 2: Request Routing
+
+The load balancer receives all requests and routes based on subdomain:
+
+```javascript
+// Edge router (runs on Cloudflare Workers / Vercel Edge)
+export default async function handler(req) {
+  const url = new URL(req.url);
+  const subdomain = extractSubdomain(url.hostname);
+
+  // Look up tenant from subdomain
+  const tenant = await getTenant(subdomain);
+
+  if (!tenant) {
+    return new Response('Tenant not found', { status: 404 });
+  }
+
+  // Add tenant context to request
+  const modifiedRequest = new Request(req, {
+    headers: {
+      ...req.headers,
+      'X-Tenant-ID': tenant.id,
+      'X-Tenant-Subdomain': subdomain,
+      'X-Tenant-Plan': tenant.plan
+    }
+  });
+
+  // Forward to application
+  return fetch('https://app.internal', modifiedRequest);
+}
+
+function extractSubdomain(hostname) {
+  // Extract subdomain from hostname
+  // customer1.my-saas.build → customer1
+  const parts = hostname.split('.');
+  return parts[0];
+}
+```
+
+### Layer 3: Application Logic
+
+Your application receives tenant-aware requests:
+
+```typescript
+// app/middleware.ts
+export async function tenantMiddleware(req, res, next) {
+  const tenantId = req.headers['x-tenant-id'];
+  const subdomain = req.headers['x-tenant-subdomain'];
+
+  if (!tenantId) {
+    return res.status(400).json({ error: 'No tenant context' });
+  }
+
+  // Load tenant data
+  const tenant = await db.tenants.findById(tenantId);
+
+  // Add to request context
+  req.tenant = tenant;
+  req.subdomain = subdomain;
+
+  next();
+}
+
+// app/routes.ts
+app.get('/dashboard', tenantMiddleware, (req, res) => {
+  // Request automatically scoped to tenant
+  const { tenant } = req;
+
+  const data = await db.widgets.findMany({
+    where: { tenantId: tenant.id }
+  });
+
+  res.json(data);
+});
+```
+
+## SSL Certificate Management
+
+Wildcard SSL certificates cover all subdomains:
+
+```typescript
+// Single wildcard certificate
+const cert = {
+  domain: '*.my-saas.build',
+  covers: [
+    'my-saas.build',           // Apex domain
+    '*.my-saas.build',         // All subdomains
+    'customer1.my-saas.build',
+    'customer2.my-saas.build',
+    'any-customer.my-saas.build'
+  ],
+  issuer: 'Let\'s Encrypt',
+  validUntil: '2027-03-05',
+  autoRenew: true
+};
+
+// Provisioned automatically by builder.domains
+await domain.getSSLStatus();
+// {
+//   status: 'active',
+//   type: 'wildcard',
+//   expires: '2027-03-05',
+//   autoRenew: true,
+//   coverage: 'unlimited_subdomains'
+// }
+```
+
+## Tenant Provisioning Flow
+
+### Customer Signup
+
+```typescript
+// Complete tenant provisioning flow
+class TenantProvisioning {
+  async onCustomerSignup(customerData) {
+    // 1. Create tenant record
+    const tenant = await db.tenants.create({
+      companyName: customerData.companyName,
+      email: customerData.email,
+      plan: 'trial'
+    });
+
+    // 2. Generate subdomain
+    const subdomain = this.generateSubdomain(
+      customerData.companyName
+    );
+
+    // 3. Check availability
+    const available = await this.checkSubdomainAvailability(
+      subdomain
+    );
+
+    if (!available) {
+      subdomain = await this.suggestAlternative(subdomain);
+    }
+
+    // 4. Reserve subdomain
+    await db.tenants.update(tenant.id, {
+      subdomain,
+      url: `https://${subdomain}.my-saas.build`
+    });
+
+    // 5. Initialize tenant database
+    await this.initializeTenantDatabase(tenant.id);
+
+    // 6. Send welcome email
+    await this.sendWelcomeEmail(tenant.email, {
+      url: `https://${subdomain}.my-saas.build`,
+      setupGuide: true
+    });
+
+    return {
+      tenantId: tenant.id,
+      subdomain,
+      url: `https://${subdomain}.my-saas.build`,
+      status: 'active'
+    };
+  }
+
+  generateSubdomain(companyName) {
+    // Convert company name to valid subdomain
+    return companyName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  async checkSubdomainAvailability(subdomain) {
+    const exists = await db.tenants.findOne({
+      where: { subdomain }
+    });
+    return !exists;
+  }
+
+  async suggestAlternative(subdomain) {
+    // Try variations
+    const alternatives = [
+      `${subdomain}-app`,
+      `${subdomain}-team`,
+      `${subdomain}-${Math.floor(Math.random() * 1000)}`
+    ];
+
+    for (const alt of alternatives) {
+      const available = await this.checkSubdomainAvailability(alt);
+      if (available) return alt;
+    }
+
+    // Generate random suffix
+    return `${subdomain}-${randomString(4)}`;
+  }
+}
+```
+
+### Instant Availability
+
+```javascript
+// Customer completes signup form
+await tenantProvisioning.onCustomerSignup({
+  companyName: 'Acme Corporation',
+  email: 'admin@acme.com'
+});
+
+// Response (< 500ms):
+{
+  tenantId: 'tenant_123',
+  subdomain: 'acme-corporation',
+  url: 'https://acme-corporation.my-saas.build',
+  status: 'active'
+}
+
+// Subdomain is immediately accessible (no DNS wait)
+```
+
+## Database Architecture Strategies
+
+### Strategy 1: Shared Database, Tenant Column
+
+```sql
+-- Single database, tenant_id column
+CREATE TABLE widgets (
+  id UUID PRIMARY KEY,
+  tenant_id UUID NOT NULL,
+  name VARCHAR(255),
+  data JSONB,
+  created_at TIMESTAMP
+);
+
+CREATE INDEX idx_widgets_tenant ON widgets(tenant_id);
+
+-- All queries scoped by tenant_id
+SELECT * FROM widgets WHERE tenant_id = '...';
+```
+
+**Pros:** Simple, cost-effective
+**Cons:** No data isolation, shared resources
+
+### Strategy 2: Schema Per Tenant
+
+```sql
+-- Each tenant gets their own schema
+CREATE SCHEMA tenant_acme;
+CREATE SCHEMA tenant_widgets;
+CREATE SCHEMA tenant_techcorp;
+
+-- Tables in each schema
+CREATE TABLE tenant_acme.widgets (...);
+CREATE TABLE tenant_widgets.widgets (...);
+
+-- Set search path per request
+SET search_path TO tenant_acme;
+SELECT * FROM widgets; -- Automatically scoped
+```
+
+**Pros:** Better isolation, easier migrations per tenant
+**Cons:** More complex, schema limits
+
+### Strategy 3: Database Per Tenant
+
+```typescript
+// Separate database for each tenant
+const getTenantDatabase = (tenantId) => {
+  return new Database({
+    host: 'postgres.internal',
+    database: `tenant_${tenantId}`,
+    // Credentials from vault
+  });
+};
+
+// Per-tenant queries
+const db = getTenantDatabase(req.tenant.id);
+const widgets = await db.widgets.findMany();
+```
+
+**Pros:** Complete isolation, independent scaling
+**Cons:** Higher costs, complex management
+
+### Strategy 4: Hybrid Approach
+
+```typescript
+class TenantDatabase {
+  getConnection(tenant) {
+    if (tenant.plan === 'enterprise') {
+      // Dedicated database for enterprise
+      return this.dedicatedDatabase(tenant.id);
+    } else if (tenant.plan === 'professional') {
+      // Dedicated schema
+      return this.dedicatedSchema(tenant.id);
+    } else {
+      // Shared database
+      return this.sharedDatabase(tenant.id);
+    }
+  }
+}
+```
+
+## Performance Considerations
+
+### Edge Routing
+
+```typescript
+// Deploy routing logic to edge (< 50ms latency globally)
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const subdomain = url.hostname.split('.')[0];
+
+    // Check edge cache first
+    const cached = await env.TENANT_CACHE.get(subdomain);
+
+    if (cached) {
+      const tenant = JSON.parse(cached);
+      return this.handleRequest(request, tenant);
+    }
+
+    // Fetch from origin
+    const tenant = await this.fetchTenant(subdomain);
+
+    // Cache for 1 hour
+    await env.TENANT_CACHE.put(
+      subdomain,
+      JSON.stringify(tenant),
+      { expirationTtl: 3600 }
+    );
+
+    return this.handleRequest(request, tenant);
+  }
+};
+```
+
+### Database Connection Pooling
+
+```typescript
+// Shared connection pool across tenants
+class TenantConnectionPool {
+  private pools = new Map();
+
+  async getConnection(tenantId) {
+    if (!this.pools.has(tenantId)) {
+      this.pools.set(tenantId, createPool({
+        host: 'postgres.internal',
+        database: `tenant_${tenantId}`,
+        max: 20, // Max connections per tenant
+        idleTimeoutMillis: 30000
+      }));
+    }
+
+    return this.pools.get(tenantId);
+  }
+
+  async cleanup() {
+    // Close idle pools
+    for (const [tenantId, pool] of this.pools) {
+      if (pool.idleCount === pool.totalCount) {
+        await pool.end();
+        this.pools.delete(tenantId);
+      }
+    }
+  }
+}
+```
+
+## Security Considerations
+
+### Tenant Isolation
+
+```typescript
+// Ensure requests can't access other tenants
+class TenantSecurityMiddleware {
+  async verify(req, res, next) {
+    const requestedTenant = req.params.tenantId;
+    const authenticatedTenant = req.tenant.id;
+
+    if (requestedTenant !== authenticatedTenant) {
+      return res.status(403).json({
+        error: 'Access denied: Tenant mismatch'
+      });
+    }
+
+    next();
+  }
+}
+
+// Use in routes
+app.get('/api/tenants/:tenantId/data',
+  authenticate,
+  tenantSecurityMiddleware.verify,
+  handler
+);
+```
+
+### Subdomain Validation
+
+```typescript
+// Prevent subdomain squatting and abuse
+class SubdomainValidator {
+  private readonly RESERVED = new Set([
+    'www', 'api', 'admin', 'app', 'mail',
+    'support', 'help', 'billing', 'status'
+  ]);
+
+  private readonly BLOCKED = new Set([
+    'admin', 'root', 'system', 'internal'
+  ]);
+
+  validate(subdomain: string): ValidationResult {
+    // Length check
+    if (subdomain.length < 3 || subdomain.length > 63) {
+      return {
+        valid: false,
+        error: 'Subdomain must be 3-63 characters'
+      };
+    }
+
+    // Format check
+    if (!/^[a-z0-9-]+$/.test(subdomain)) {
+      return {
+        valid: false,
+        error: 'Only lowercase letters, numbers, and hyphens'
+      };
+    }
+
+    // Reserved check
+    if (this.RESERVED.has(subdomain)) {
+      return {
+        valid: false,
+        error: 'This subdomain is reserved'
+      };
+    }
+
+    // Blocked check
+    if (this.BLOCKED.has(subdomain)) {
+      return {
+        valid: false,
+        error: 'This subdomain is not allowed'
+      };
+    }
+
+    return { valid: true };
+  }
+}
+```
+
+### Rate Limiting Per Tenant
+
+```typescript
+// Different rate limits per tenant plan
+class TenantRateLimiter {
+  private limits = {
+    free: { requests: 100, window: '1m' },
+    professional: { requests: 1000, window: '1m' },
+    enterprise: { requests: 10000, window: '1m' }
+  };
+
+  async checkLimit(tenant) {
+    const limit = this.limits[tenant.plan];
+    const key = `ratelimit:${tenant.id}`;
+
+    const current = await redis.incr(key);
+
+    if (current === 1) {
+      await redis.expire(key, this.parseWindow(limit.window));
+    }
+
+    if (current > limit.requests) {
+      throw new RateLimitError(
+        `Rate limit exceeded: ${limit.requests}/${limit.window}`
+      );
+    }
+
+    return {
+      allowed: true,
+      remaining: limit.requests - current
+    };
+  }
+}
+```
+
+## Monitoring and Analytics
+
+### Per-Tenant Metrics
+
+```typescript
+// Track metrics per tenant
+class TenantAnalytics {
+  async trackRequest(tenant, request) {
+    await analytics.track({
+      event: 'api_request',
+      tenantId: tenant.id,
+      subdomain: tenant.subdomain,
+      path: request.path,
+      method: request.method,
+      duration: request.duration,
+      status: request.status,
+      timestamp: Date.now()
+    });
+  }
+
+  async getTenantMetrics(tenantId, period = '24h') {
+    return analytics.query({
+      tenantId,
+      period,
+      metrics: [
+        'total_requests',
+        'unique_users',
+        'avg_response_time',
+        'error_rate',
+        'bandwidth_used'
+      ]
+    });
+  }
+}
+```
+
+### Health Monitoring
+
+```typescript
+// Monitor subdomain health
+class SubdomainHealthCheck {
+  async checkAllSubdomains() {
+    const tenants = await db.tenants.findMany({
+      where: { status: 'active' }
+    });
+
+    const results = await Promise.all(
+      tenants.map(async (tenant) => {
+        const health = await this.checkSubdomain(
+          tenant.subdomain
+        );
+
+        if (!health.ok) {
+          await this.alertOps({
+            tenantId: tenant.id,
+            subdomain: tenant.subdomain,
+            error: health.error
+          });
+        }
+
+        return { tenant, health };
+      })
+    );
+
+    return results;
+  }
+
+  async checkSubdomain(subdomain) {
+    try {
+      const response = await fetch(
+        `https://${subdomain}.my-saas.build/health`,
+        { timeout: 5000 }
+      );
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        latency: response.headers.get('X-Response-Time')
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message
+      };
+    }
+  }
+}
+```
+
+## Advanced Patterns
+
+### Subdomain Routing with Path Prefixes
+
+```typescript
+// Route different features to different services
+const routingRules = {
+  '*.my-saas.build': {
+    '/': 'app.internal',
+    '/api/*': 'api.internal',
+    '/admin/*': 'admin.internal',
+    '/billing/*': 'billing.internal'
+  }
+};
+
+async function route(request) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  for (const [pattern, target] of Object.entries(routingRules)) {
+    if (matchesPattern(path, pattern)) {
+      return fetch(`https://${target}${path}`, request);
+    }
+  }
+}
+```
+
+### Multi-Level Subdomains
+
+```typescript
+// Support team1.customer.my-saas.build
+const domain = await builderDomains.claim('my-saas');
+
+await domain.enableWildcard({
+  pattern: '*.*.my-saas.build',
+  levels: 2 // Support 2-level subdomains
+});
+
+// Routing logic
+function parseMultiLevelSubdomain(hostname) {
+  // team1.acme.my-saas.build
+  const parts = hostname.split('.');
+  return {
+    workspace: parts[0],  // team1
+    tenant: parts[1],     // acme
+    domain: parts.slice(2).join('.') // my-saas.build
+  };
+}
+```
+
+## Conclusion
+
+Wildcard subdomains enable truly scalable multi-tenant architecture:
+
+- **Instant provisioning** (no DNS configuration per tenant)
+- **Unlimited scale** (millions of tenants on one DNS record)
+- **Automatic SSL** (wildcard certificate covers all)
+- **Simple routing** (edge logic handles tenant context)
+- **Cost effective** (no per-subdomain fees)
+
+In 2026, every SaaS application should use wildcard subdomains. Manual DNS configuration doesn't scale.
+
+**Build multi-tenant SaaS the right way:** [builder.domains](https://builder.domains)

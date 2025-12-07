@@ -1,0 +1,760 @@
+---
+title: "Connecting Vercel, Netlify, and Railway: Universal Domain Integration"
+description: "Connect builder.domains to any deployment platform. Learn how to integrate with Vercel, Netlify, Railway, and custom infrastructure."
+date: "2026-03-19"
+author: "Builder Domains Team"
+tags: ["vercel", "netlify", "railway", "deployment", "integration"]
+---
+
+# Connecting Vercel, Netlify, and Railway: Universal Domain Integration
+
+Modern deployment platforms made deployment trivial. But connecting custom domains remained complex—until now. Builder.domains provides universal integration with every major platform through a simple, consistent API.
+
+## The Platform Integration Problem
+
+Each platform has different domain configuration:
+
+**Vercel:**
+```bash
+$ vercel domains add my-app.build
+$ vercel domains verify my-app.build
+# Add DNS records manually
+# Wait for verification
+```
+
+**Netlify:**
+```bash
+$ netlify domains:add my-app.build
+# Configure DNS through Netlify DNS
+# Or add records to external DNS
+```
+
+**Railway:**
+```bash
+$ railway domain add my-app.build
+# Configure CNAME record
+# Verify ownership
+```
+
+**Each platform requires:**
+- Different CLI commands
+- Different verification steps
+- Manual DNS configuration
+- Platform-specific documentation
+
+## Universal Integration with builder.domains
+
+One API, all platforms:
+
+```bash
+# Vercel
+$ builder-domains connect my-app --to vercel
+
+# Netlify
+$ builder-domains connect my-app --to netlify
+
+# Railway
+$ builder-domains connect my-app --to railway
+
+# Custom server
+$ builder-domains connect my-app --to https://my-server.com
+```
+
+All handle SSL, DNS, and verification automatically.
+
+## Vercel Integration
+
+### Quick Start
+
+```bash
+# Deploy to Vercel
+$ vercel --prod
+
+# Get deployment URL
+$ VERCEL_URL=$(vercel inspect --url)
+
+# Connect domain
+$ builder-domains claim my-app --connect $VERCEL_URL
+
+# Done! Live at https://my-app.build
+```
+
+### Programmatic Integration
+
+```typescript
+import { BuilderDomains } from '@builder-domains/sdk';
+import { deploy } from '@vercel/client';
+
+async function deployToVercel() {
+  // Deploy to Vercel
+  const deployment = await deploy({
+    name: 'my-app',
+    files: await getProjectFiles(),
+    target: 'production'
+  });
+
+  // Claim and connect domain
+  const domains = new BuilderDomains({ apiKey: process.env.BUILDER_KEY });
+
+  const domain = await domains.claim('my-app');
+  await domain.connect({
+    platform: 'vercel',
+    deploymentUrl: deployment.url,
+    autoSSL: true
+  });
+
+  return `https://${domain.fqdn}`;
+}
+```
+
+### Multi-Environment Setup
+
+```typescript
+// environments.ts
+const environments = {
+  production: {
+    domain: 'my-app',
+    vercel: {
+      target: 'production',
+      branch: 'main'
+    }
+  },
+
+  staging: {
+    domain: 'my-app-staging',
+    vercel: {
+      target: 'preview',
+      branch: 'staging'
+    }
+  },
+
+  preview: {
+    domain: (branch: string) => `my-app-${branch}`,
+    vercel: {
+      target: 'preview',
+      branch: '*'
+    }
+  }
+};
+
+// Deploy all environments
+async function deployAll() {
+  for (const [env, config] of Object.entries(environments)) {
+    const deployment = await vercel.deploy(config.vercel);
+
+    const domain = await builderDomains.claim(config.domain);
+    await domain.connect(deployment.url);
+
+    console.log(`${env}: https://${domain.fqdn}`);
+  }
+}
+```
+
+### GitHub Actions Integration
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }})
+            DOMAIN="my-app"
+          else
+            URL=$(vercel --token=${{ secrets.VERCEL_TOKEN }})
+            DOMAIN="my-app-pr-${{ github.event.number }}"
+          fi
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+
+      - name: Connect Domain
+        run: |
+          builder-domains connect ${{ steps.deploy.outputs.domain }} \
+            --to ${{ steps.deploy.outputs.url }} \
+            --token ${{ secrets.BUILDER_TOKEN }}
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        run: |
+          gh pr comment ${{ github.event.number }} \
+            --body "Preview: https://${{ steps.deploy.outputs.domain }}.build"
+```
+
+## Netlify Integration
+
+### Quick Start
+
+```bash
+# Deploy to Netlify
+$ netlify deploy --prod
+
+# Get site URL
+$ NETLIFY_URL=$(netlify status --json | jq -r '.url')
+
+# Connect domain
+$ builder-domains claim my-app --connect $NETLIFY_URL
+```
+
+### Programmatic Integration
+
+```typescript
+import { NetlifyAPI } from 'netlify';
+import { BuilderDomains } from '@builder-domains/sdk';
+
+async function deployToNetlify() {
+  const netlify = new NetlifyAPI(process.env.NETLIFY_TOKEN);
+
+  // Deploy site
+  const site = await netlify.createSite({
+    name: 'my-app',
+    custom_domain: null // We'll use builder.domains
+  });
+
+  const deployment = await netlify.deploy(site.id, {
+    dir: './dist',
+    draft: false
+  });
+
+  // Connect builder.domains
+  const domains = new BuilderDomains({ apiKey: process.env.BUILDER_KEY });
+
+  const domain = await domains.claim('my-app');
+  await domain.connect({
+    platform: 'netlify',
+    siteId: site.id,
+    autoSSL: true
+  });
+
+  return {
+    siteId: site.id,
+    deploymentId: deployment.id,
+    url: `https://${domain.fqdn}`
+  };
+}
+```
+
+### Form Handling Integration
+
+```typescript
+// Netlify Forms with custom domain
+async function setupNetlifyForms() {
+  const domain = await builderDomains.claim('my-form-app');
+
+  await domain.connect({
+    platform: 'netlify',
+    siteId: process.env.NETLIFY_SITE_ID,
+    features: {
+      forms: true,
+      functions: true,
+      identityy: true
+    }
+  });
+
+  // Forms automatically work on custom domain
+  return `https://${domain.fqdn}`;
+}
+```
+
+## Railway Integration
+
+### Quick Start
+
+```bash
+# Deploy to Railway
+$ railway up
+
+# Get deployment URL
+$ RAILWAY_URL=$(railway status --json | jq -r '.url')
+
+# Connect domain
+$ builder-domains claim my-app --connect $RAILWAY_URL
+```
+
+### Programmatic Integration
+
+```typescript
+import { RailwayAPI } from '@railway/api';
+import { BuilderDomains } from '@builder-domains/sdk';
+
+async function deployToRailway() {
+  const railway = new RailwayAPI({ token: process.env.RAILWAY_TOKEN });
+
+  // Create project and deployment
+  const project = await railway.createProject({
+    name: 'my-app',
+    plugins: ['postgresql', 'redis']
+  });
+
+  const deployment = await railway.deploy(project.id, {
+    source: 'github',
+    repo: 'username/my-app'
+  });
+
+  // Connect domain
+  const domains = new BuilderDomains({ apiKey: process.env.BUILDER_KEY });
+
+  const domain = await domains.claim('my-app');
+  await domain.connect({
+    platform: 'railway',
+    projectId: project.id,
+    serviceId: deployment.serviceId,
+    autoSSL: true
+  });
+
+  return {
+    projectId: project.id,
+    deploymentId: deployment.id,
+    url: `https://${domain.fqdn}`
+  };
+}
+```
+
+### Database Integration
+
+```typescript
+// Railway database with custom domain
+async function setupDatabaseApp() {
+  const railway = new RailwayAPI({ token: process.env.RAILWAY_TOKEN });
+
+  // Create project with database
+  const project = await railway.createProject({
+    name: 'my-db-app',
+    plugins: ['postgresql']
+  });
+
+  // Deploy app
+  const deployment = await railway.deploy(project.id, {
+    source: 'docker',
+    image: 'my-app:latest',
+    env: {
+      DATABASE_URL: '{{RAILWAY_POSTGRESQL_URL}}'
+    }
+  });
+
+  // Connect domain
+  const domain = await builderDomains.claim('my-db-app');
+  await domain.connect({
+    platform: 'railway',
+    projectId: project.id,
+    serviceId: deployment.serviceId
+  });
+
+  return `https://${domain.fqdn}`;
+}
+```
+
+## Custom Server Integration
+
+### Any HTTP Server
+
+```bash
+# Connect to any server
+$ builder-domains claim my-app --connect https://my-server.com
+
+# Or with IP
+$ builder-domains claim my-app --connect http://1.2.3.4:8080
+```
+
+### Programmatic Configuration
+
+```typescript
+// Custom server integration
+async function connectCustomServer() {
+  const domain = await builderDomains.claim('my-app');
+
+  await domain.connect({
+    target: 'https://my-backend.example.com',
+    type: 'reverse-proxy',
+    ssl: 'auto',
+    headers: {
+      'X-Forwarded-For': '$remote_addr',
+      'X-Real-IP': '$remote_addr',
+      'X-Forwarded-Proto': 'https'
+    }
+  });
+
+  return domain;
+}
+```
+
+### Load Balancing
+
+```typescript
+// Multiple backend servers
+async function setupLoadBalancing() {
+  const domain = await builderDomains.claim('my-app');
+
+  await domain.connect({
+    type: 'load-balanced',
+    strategy: 'round-robin',
+    backends: [
+      'https://backend-1.example.com',
+      'https://backend-2.example.com',
+      'https://backend-3.example.com'
+    ],
+    healthCheck: {
+      path: '/health',
+      interval: 30,
+      timeout: 5
+    }
+  });
+
+  return domain;
+}
+```
+
+## Multi-Platform Architecture
+
+### Microservices Across Platforms
+
+```typescript
+// Different services on different platforms
+async function deployMicroservices() {
+  const services = {
+    // Frontend on Vercel
+    web: {
+      platform: 'vercel',
+      deployment: await vercel.deploy('./apps/web'),
+      subdomain: '@'
+    },
+
+    // API on Railway
+    api: {
+      platform: 'railway',
+      deployment: await railway.deploy('./apps/api'),
+      subdomain: 'api'
+    },
+
+    // Docs on Netlify
+    docs: {
+      platform: 'netlify',
+      deployment: await netlify.deploy('./apps/docs'),
+      subdomain: 'docs'
+    },
+
+    // Admin panel on custom server
+    admin: {
+      platform: 'custom',
+      deployment: { url: 'https://admin-server.internal' },
+      subdomain: 'admin'
+    }
+  };
+
+  // Claim base domain
+  const domain = await builderDomains.claim('my-app');
+
+  // Configure all subdomains
+  for (const [name, service] of Object.entries(services)) {
+    await domain.addRoute({
+      subdomain: service.subdomain,
+      target: service.deployment.url,
+      platform: service.platform
+    });
+
+    console.log(`${name}: https://${service.subdomain}.my-app.build`);
+  }
+
+  return domain;
+}
+```
+
+### Platform Migration
+
+```typescript
+// Migrate from one platform to another with zero downtime
+async function migrateVercelToRailway() {
+  const domain = await builderDomains.get('my-app');
+
+  // Deploy to new platform
+  const railwayDeployment = await railway.deploy('./');
+
+  // Test new deployment
+  await testDeployment(railwayDeployment.url);
+
+  // Gradual traffic migration
+  await domain.updateRouting({
+    targets: [
+      { url: vercelUrl, weight: 90 },  // 90% to Vercel
+      { url: railwayUrl, weight: 10 }  // 10% to Railway
+    ]
+  });
+
+  // Monitor metrics
+  await sleep(3600000); // 1 hour
+
+  const metrics = await domain.getMetrics();
+
+  if (metrics.error_rate < 0.01) {
+    // Full cutover
+    await domain.updateRouting({
+      targets: [
+        { url: railwayUrl, weight: 100 }
+      ]
+    });
+
+    console.log('Migration complete!');
+  }
+}
+```
+
+## CI/CD Integration Patterns
+
+### Multi-Platform Pipeline
+
+```yaml
+# .github/workflows/deploy-all.yml
+name: Deploy All Services
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Vercel
+        id: vercel
+        run: |
+          cd apps/web
+          URL=$(vercel --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Connect Domain
+        run: |
+          builder-domains route my-app @ --to ${{ steps.vercel.outputs.url }}
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Railway
+        id: railway
+        run: |
+          cd apps/api
+          railway up
+          URL=$(railway status --json | jq -r '.url')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Connect Domain
+        run: |
+          builder-domains route my-app api --to ${{ steps.railway.outputs.url }}
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Netlify
+        id: netlify
+        run: |
+          cd apps/docs
+          netlify deploy --prod
+          URL=$(netlify status --json | jq -r '.url')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Connect Domain
+        run: |
+          builder-domains route my-app docs --to ${{ steps.netlify.outputs.url }}
+```
+
+### Preview Environments
+
+```yaml
+# preview.yml
+name: Preview Deployment
+
+on: [pull_request]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [web, api, docs]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy Service
+        id: deploy
+        run: |
+          cd apps/${{ matrix.service }}
+
+          if [ "${{ matrix.service }}" == "web" ]; then
+            URL=$(vercel --token=${{ secrets.VERCEL_TOKEN }})
+          elif [ "${{ matrix.service }}" == "api" ]; then
+            railway up
+            URL=$(railway status --json | jq -r '.url')
+          else
+            netlify deploy
+            URL=$(netlify status --json | jq -r '.url')
+          fi
+
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      - name: Connect Preview Domain
+        run: |
+          SUBDOMAIN="${{ matrix.service }}"
+          if [ "$SUBDOMAIN" == "web" ]; then
+            SUBDOMAIN="@"
+          fi
+
+          builder-domains route "my-app-pr-${{ github.event.number }}" $SUBDOMAIN \
+            --to ${{ steps.deploy.outputs.url }} \
+            --ttl 7d
+```
+
+## Monitoring and Observability
+
+### Cross-Platform Metrics
+
+```typescript
+// Monitor all platforms from one place
+async function getUnifiedMetrics() {
+  const domain = await builderDomains.get('my-app');
+
+  const routes = await domain.getRoutes();
+
+  const metrics = await Promise.all(
+    routes.map(async (route) => {
+      const routeMetrics = await domain.getRouteMetrics(route.subdomain);
+
+      return {
+        subdomain: route.subdomain,
+        platform: route.platform,
+        metrics: {
+          requests: routeMetrics.requests,
+          latency: routeMetrics.latency_p95,
+          errors: routeMetrics.error_rate,
+          uptime: routeMetrics.uptime_percentage
+        }
+      };
+    })
+  );
+
+  return metrics;
+}
+
+// Example output:
+// [
+//   { subdomain: '@', platform: 'vercel', metrics: { ... } },
+//   { subdomain: 'api', platform: 'railway', metrics: { ... } },
+//   { subdomain: 'docs', platform: 'netlify', metrics: { ... } }
+// ]
+```
+
+### Unified Logging
+
+```typescript
+// Aggregate logs from all platforms
+async function getUnifiedLogs(timeRange: string) {
+  const domain = await builderDomains.get('my-app');
+
+  const logs = await domain.getLogs({
+    timeRange,
+    includeAllRoutes: true,
+    format: 'json'
+  });
+
+  // Logs from Vercel, Railway, Netlify all in one stream
+  for (const log of logs) {
+    console.log(`[${log.platform}] [${log.subdomain}] ${log.message}`);
+  }
+}
+```
+
+## Best Practices
+
+### 1. Environment Separation
+
+```typescript
+const envConfig = {
+  production: {
+    domain: 'my-app',
+    platforms: {
+      web: 'vercel',
+      api: 'railway-production'
+    }
+  },
+
+  staging: {
+    domain: 'my-app-staging',
+    platforms: {
+      web: 'vercel',
+      api: 'railway-staging'
+    }
+  },
+
+  development: {
+    domain: 'my-app-dev',
+    platforms: {
+      web: 'localhost:3000',
+      api: 'localhost:8000'
+    }
+  }
+};
+```
+
+### 2. Platform-Specific Features
+
+```typescript
+// Use each platform's strengths
+const platformFeatures = {
+  vercel: ['edge-functions', 'image-optimization', 'analytics'],
+  netlify: ['forms', 'identity', 'split-testing'],
+  railway: ['databases', 'redis', 'cron-jobs']
+};
+
+// Route accordingly
+await domain.addRoute({
+  subdomain: '@',
+  target: vercelDeployment,
+  features: ['edge-functions']
+});
+```
+
+### 3. Failover Configuration
+
+```typescript
+// Automatic failover between platforms
+await domain.configure({
+  primary: vercelDeployment,
+  fallback: netlifyDeployment,
+  healthCheck: {
+    path: '/health',
+    interval: 30,
+    failureThreshold: 3
+  }
+});
+```
+
+## Conclusion
+
+Builder.domains provides universal platform integration:
+
+- **One API** for all platforms
+- **Automatic SSL** regardless of platform
+- **Zero configuration** DNS
+- **Instant deployment** connections
+- **Platform migration** without downtime
+- **Unified monitoring** across platforms
+
+Stop wrestling with platform-specific domain configuration. Use one tool that works everywhere.
+
+**Connect any platform in seconds:** [builder.domains](https://builder.domains)

@@ -1,0 +1,304 @@
+---
+$type: LandingPage
+$id: https://builder.domains
+name: Builder Domains
+title: Free Domains for Builders and AI Agents
+description: Instant, free domain names for your projects. No registration, no DNS hassles, no credit card required.
+---
+
+# Builder Domains
+
+## Hero
+
+<Hero
+  badge="Zero Friction"
+  title="Free Domains. Instant Setup. Ship Faster."
+  subtitle="Get a professional domain for your project in seconds. No registration, no DNS configuration, no credit card required."
+  primaryCTA={{ label: "Claim Your Domain", href: "/claim" }}
+  secondaryCTA={{ label: "Check Availability", href: "/check" }}
+/>
+
+## Domain Search
+
+<DomainSearch
+  placeholder="Enter your project name"
+  tlds={[".build", ".dev.build", ".demo.build", ".api.build"]}
+  cta="Check Availability"
+/>
+
+## Problem
+
+<Section variant="problem">
+
+### Domain Setup Kills Momentum
+
+Every time you start a project, the same friction:
+
+- **Registration forms** — Email, password, payment info
+- **DNS configuration** — A records, CNAME, nameservers
+- **SSL certificates** — Provisioning, renewal, configuration
+- **Propagation delays** — Wait 24-48 hours for DNS
+- **Renewal fees** — Pay annually for domains you might abandon
+
+By the time your domain is ready, your motivation is gone.
+
+</Section>
+
+## Solution
+
+<Section variant="solution">
+
+### One Command. Live Domain.
+
+```bash
+npx builder.domains claim myproject
+```
+
+```
+✓ Domain claimed: myproject.build
+✓ SSL certificate provisioned
+✓ Ready to connect
+
+Your domain is live at https://myproject.build
+```
+
+That's it. No forms. No waiting. No payment.
+
+</Section>
+
+## Features
+
+<Features
+  title="Everything You Need. Nothing You Don't."
+  subtitle="Domains designed for the speed of modern development."
+  features={[
+    {
+      icon: "zap",
+      title: "Instant Claim",
+      description: "Claim a domain in milliseconds. No registration flow, no email verification, no credit card."
+    },
+    {
+      icon: "lock",
+      title: "Automatic SSL",
+      description: "HTTPS enabled by default. Certificates provisioned and renewed automatically."
+    },
+    {
+      icon: "server",
+      title: "Simple DNS",
+      description: "Add DNS records with a simple API. No nameserver configuration required."
+    },
+    {
+      icon: "layers",
+      title: "Wildcard Support",
+      description: "Enable *.yourdomain.build for multi-tenant apps and dynamic subdomains."
+    },
+    {
+      icon: "bot",
+      title: "AI-Ready API",
+      description: "Programmatic domain management for AI agents and automated workflows."
+    },
+    {
+      icon: "trending-up",
+      title: "Upgrade Path",
+      description: "Ready for production? Migrate to a custom domain with one command."
+    }
+  ]}
+/>
+
+## Available TLDs
+
+<Section>
+
+### Choose Your Extension
+
+| TLD | Best For | Example |
+|-----|----------|---------|
+| `.build` | General projects | `myapp.build` |
+| `.dev.build` | Development & staging | `myapp.dev.build` |
+| `.demo.build` | Demos & prototypes | `myapp.demo.build` |
+| `.api.build` | API endpoints | `myapp.api.build` |
+| `.app.build` | Applications | `myapp.app.build` |
+| `.ai.build` | AI projects | `myapp.ai.build` |
+
+</Section>
+
+## How It Works
+
+<Steps
+  title="Live in 30 Seconds"
+  steps={[
+    {
+      title: "Claim Your Domain",
+      description: "Pick a name, pick a TLD. It's yours instantly.",
+      code: `import { Domain } from 'builder.domains'
+
+const domain = await Domain.claim({
+  name: 'myproject',
+  tld: 'build'
+})`
+    },
+    {
+      title: "Connect Your Project",
+      description: "Point to Vercel, Netlify, Railway, or any target.",
+      code: `await domain.connect({
+  target: 'my-project.vercel.app'
+})
+
+// Or use the CLI
+// npx builder.domains connect myproject.build \\
+//   --target my-project.vercel.app`
+    },
+    {
+      title: "Ship It",
+      description: "Your domain is live. Go back to building.",
+      code: `console.log(domain.url)
+// https://myproject.build
+
+// SSL? ✓ Automatic
+// DNS? ✓ Configured
+// Waiting? ✓ None`
+    }
+  ]}
+/>
+
+## Use Cases
+
+<Section>
+
+### Perfect For
+
+<Grid cols={2}>
+
+**Indie Developers**
+Ship side projects, experiments, and demos without paying for domains you might never use again.
+
+**Hackathon Participants**
+Go from idea to live demo in minutes. Impress judges with a real URL, not a Vercel subdomain.
+
+**AI Agents**
+Programmatically provision domains as part of autonomous startup creation. No human intervention.
+
+**Startup Studios**
+Instant domains for every portfolio company. No procurement delays, no registration overhead.
+
+</Grid>
+
+</Section>
+
+## Integration
+
+<Section>
+
+### Works With Your Stack
+
+```typescript
+// Vercel
+await domain.connect({ provider: 'vercel', project: 'my-project' })
+
+// Netlify
+await domain.connect({ provider: 'netlify', site: 'my-site' })
+
+// Railway
+await domain.connect({ provider: 'railway', service: 'my-service' })
+
+// Any target
+await domain.connect({ target: 'my-app.herokuapp.com' })
+```
+
+</Section>
+
+## Stats
+
+<Stats
+  stats={[
+    { value: "< 1s", label: "Claim Time" },
+    { value: "Free", label: "Forever" },
+    { value: "Auto", label: "SSL Certs" },
+    { value: "0", label: "DNS Hassle" }
+  ]}
+/>
+
+## Pricing
+
+<Pricing
+  title="Free for Builders"
+  tiers={[
+    {
+      name: "Builder",
+      price: "Free",
+      description: "For individual builders",
+      features: [
+        "Unlimited domains",
+        "Automatic SSL",
+        "Basic DNS",
+        "Connect to any target",
+        "Community support"
+      ],
+      cta: { label: "Start Free", href: "/signup" }
+    },
+    {
+      name: "Studio",
+      price: "$29/mo",
+      description: "For teams and studios",
+      features: [
+        "Everything in Builder",
+        "Custom TLDs",
+        "Wildcard domains",
+        "Advanced DNS",
+        "Analytics",
+        "Priority support"
+      ],
+      cta: { label: "Start Trial", href: "/signup?plan=studio" },
+      featured: true
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      description: "For large organizations",
+      features: [
+        "Everything in Studio",
+        "Private TLDs",
+        "SLA guarantees",
+        "Dedicated support",
+        "Custom integration"
+      ],
+      cta: { label: "Contact Sales", href: "/contact" }
+    }
+  ]}
+/>
+
+## FAQ
+
+<FAQ
+  items={[
+    {
+      question: "Are these real domains?",
+      answer: "Yes! Builder domains are fully functional domains with proper DNS resolution and SSL certificates. They work exactly like any other domain on the internet."
+    },
+    {
+      question: "What's the catch?",
+      answer: "No catch. Free tier domains use our builder TLDs (like .build). If you want a custom TLD (like .com), you can upgrade through our platform or any registrar."
+    },
+    {
+      question: "Can I use these for production?",
+      answer: "Absolutely. Many builders use builder.domains for production sites. When you're ready for a custom domain, our upgrade path makes migration seamless."
+    },
+    {
+      question: "What happens if I stop using a domain?",
+      answer: "Inactive domains are released after 30 days of no traffic. You'll get a warning email before release. Active domains are yours as long as you're using them."
+    },
+    {
+      question: "Can AI agents use this?",
+      answer: "Yes! Our API is designed for programmatic access. AI agents can claim domains, configure DNS, and manage SSL without any human intervention."
+    }
+  ]}
+/>
+
+## CTA
+
+<CTA
+  title="Ready to Ship?"
+  subtitle="Claim your domain in seconds. No registration required."
+  primaryCTA={{ label: "npx builder.domains claim", href: "/docs/quickstart" }}
+  secondaryCTA={{ label: "Browse TLDs", href: "/tlds" }}
+/>

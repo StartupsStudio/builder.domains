@@ -1,0 +1,174 @@
+---
+title: DNS Management
+description: Simple DNS record management
+---
+
+# DNS Management
+
+Manage DNS records with a simple API—no nameserver configuration required.
+
+## Basic DNS Operations
+
+### Add Records
+
+```typescript
+// Add a CNAME record
+await domain.dns.add({
+  type: 'CNAME',
+  name: 'www',
+  value: 'myproject.build'
+})
+
+// Add an A record
+await domain.dns.add({
+  type: 'A',
+  name: '@',
+  value: '123.456.789.0'
+})
+
+// Add a TXT record
+await domain.dns.add({
+  type: 'TXT',
+  name: '_verify',
+  value: 'verification-token'
+})
+```
+
+### List Records
+
+```typescript
+const records = await domain.dns.list()
+
+// [
+//   { type: 'A', name: '@', value: '123.456.789.0', ttl: 300 },
+//   { type: 'CNAME', name: 'www', value: 'myproject.build', ttl: 300 }
+// ]
+```
+
+### Remove Records
+
+```typescript
+await domain.dns.remove({
+  type: 'CNAME',
+  name: 'www'
+})
+```
+
+### Update Records
+
+```typescript
+await domain.dns.update({
+  type: 'A',
+  name: '@',
+  value: '987.654.321.0'
+})
+```
+
+## Supported Record Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| `A` | IPv4 address | `123.456.789.0` |
+| `AAAA` | IPv6 address | `2001:db8::1` |
+| `CNAME` | Alias to another domain | `target.example.com` |
+| `TXT` | Text records | `v=spf1 include:...` |
+| `MX` | Mail exchange | `mail.example.com` |
+
+## TTL (Time to Live)
+
+```typescript
+await domain.dns.add({
+  type: 'A',
+  name: '@',
+  value: '123.456.789.0',
+  ttl: 3600  // 1 hour (default: 300 = 5 minutes)
+})
+```
+
+## Common Configurations
+
+### Root and WWW
+
+```typescript
+// Root domain points to deployment
+await domain.dns.add({
+  type: 'CNAME',
+  name: '@',
+  value: 'my-app.vercel.app'
+})
+
+// WWW redirects to root
+await domain.dns.add({
+  type: 'CNAME',
+  name: 'www',
+  value: 'myproject.build'
+})
+```
+
+### Email Configuration
+
+```typescript
+// MX records for email
+await domain.dns.add({
+  type: 'MX',
+  name: '@',
+  value: 'mail.provider.com',
+  priority: 10
+})
+
+// SPF record
+await domain.dns.add({
+  type: 'TXT',
+  name: '@',
+  value: 'v=spf1 include:provider.com ~all'
+})
+
+// DKIM record
+await domain.dns.add({
+  type: 'TXT',
+  name: 'selector._domainkey',
+  value: 'v=DKIM1; k=rsa; p=...'
+})
+```
+
+### Subdomains
+
+```typescript
+// API subdomain
+await domain.dns.add({
+  type: 'CNAME',
+  name: 'api',
+  value: 'api-server.example.com'
+})
+
+// Staging subdomain
+await domain.dns.add({
+  type: 'CNAME',
+  name: 'staging',
+  value: 'staging.vercel.app'
+})
+```
+
+## Propagation
+
+DNS changes propagate instantly within the builder.domains network. External propagation may take a few minutes.
+
+```typescript
+// Check propagation status
+const status = await domain.dns.propagation()
+
+// { internal: 'propagated', external: 'propagating' }
+```
+
+## CLI Usage
+
+```bash
+# List DNS records
+npx builder.domains dns list myproject.build
+
+# Add a record
+npx builder.domains dns add myproject.build --type CNAME --name www --value myproject.build
+
+# Remove a record
+npx builder.domains dns remove myproject.build --type CNAME --name www
+```

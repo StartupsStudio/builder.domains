@@ -1,0 +1,96 @@
+---
+title: Quickstart
+description: Claim your first domain in seconds
+---
+
+# Quickstart
+
+Get a free domain for your project in under 30 seconds.
+
+## Installation
+
+```bash
+npm install builder.domains
+```
+
+Or use the CLI directly:
+
+```bash
+npx builder.domains claim myproject
+```
+
+## Claim Your First Domain
+
+### Using the SDK
+
+```typescript
+import { Domain } from 'builder.domains'
+
+// Claim a domain
+const domain = await Domain.claim({
+  name: 'myproject',
+  tld: 'build'
+})
+
+console.log(domain.url)  // https://myproject.build
+```
+
+### Using the CLI
+
+```bash
+# Claim with default TLD (.build)
+npx builder.domains claim myproject
+
+# Claim with specific TLD
+npx builder.domains claim myproject --tld dev.build
+
+# Check availability first
+npx builder.domains check myproject
+```
+
+## Connect to Your Deployment
+
+### Vercel
+
+```typescript
+await domain.connect({
+  provider: 'vercel',
+  project: 'my-vercel-project'
+})
+```
+
+### Netlify
+
+```typescript
+await domain.connect({
+  provider: 'netlify',
+  site: 'my-netlify-site'
+})
+```
+
+### Any Target
+
+```typescript
+await domain.connect({
+  target: 'my-app.vercel.app'
+})
+```
+
+## Verify It's Working
+
+```bash
+# Check domain status
+npx builder.domains status myproject.build
+
+# Output:
+# ✓ Domain: myproject.build
+# ✓ SSL: Active
+# ✓ Target: my-app.vercel.app
+# ✓ Status: Live
+```
+
+## What's Next?
+
+- [Configure DNS records](/docs/dns)
+- [Set up wildcard subdomains](/docs/wildcard)
+- [Enable analytics](/docs/analytics)

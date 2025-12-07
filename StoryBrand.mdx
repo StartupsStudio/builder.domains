@@ -1,0 +1,162 @@
+---
+$type: StoryBrand
+$id: https://builder.domains/storybrand
+name: Builder Domains
+tagline: Free Domains for Builders and AI Agents
+oneLiner: Builder Domains provides free, instant domain names so builders and AI agents can launch projects without the friction of domain registration, DNS configuration, or renewal headaches.
+---
+
+# StoryBrand Framework: Builder Domains
+
+## 1. Character (The Hero)
+
+**Who is our customer?**
+
+The Builder, Developer, or AI Agent who needs to launch projects quickly without domain friction.
+
+**What do they want?**
+
+- Launch projects instantly without domain registration delays
+- Skip DNS configuration complexity
+- No credit card or payment required to start
+- Professional-looking URLs for demos, prototypes, and MVPs
+- Programmatic domain management for AI-driven workflows
+
+## 2. Problem
+
+### External Problem (Tangible)
+
+"I just want to ship my project, but I have to stop and deal with domain registration, DNS records, SSL certificates, and propagation delays."
+
+### Internal Problem (Emotional)
+
+"Every time I need a domain, it breaks my flow. I lose momentum on the actual work while fighting with registrars and DNS settings."
+
+### Philosophical Problem
+
+In an age where code can be deployed in seconds, domain setup shouldn't take hours. Infrastructure should accelerate builders, not slow them down.
+
+### The Villain
+
+**Domain Friction** — The unnecessary complexity of traditional domain registration, DNS management, and the artificial scarcity that makes builders pay for something that should be instant.
+
+## 3. Guide (The Brand)
+
+**Position:** We've built a domain infrastructure designed for the speed of modern development and AI agents.
+
+**Empathy:** We've launched hundreds of projects and felt the frustration of domain setup every single time.
+
+**Authority:**
+
+- Instant provisioning with no manual DNS
+- Automatic SSL certificates
+- API-first design for programmatic access
+- Integration with startup-builder ecosystem
+
+## 4. Plan (The Path)
+
+### Step 1: Claim Your Domain
+
+Pick a subdomain on our builder-friendly TLDs—instantly, no registration required.
+
+```typescript
+import { Domain } from 'builder.domains'
+
+const domain = await Domain.claim({
+  name: 'myproject',
+  tld: 'build'  // myproject.build
+})
+```
+
+### Step 2: Connect Your Project
+
+Point to your deployment with a single line—Vercel, Netlify, Railway, or any custom endpoint.
+
+```typescript
+await domain.connect({
+  target: 'my-project.vercel.app',
+  ssl: true
+})
+```
+
+### Step 3: Build and Ship
+
+Your domain is live. Go back to building.
+
+```typescript
+console.log(domain.url)  // https://myproject.build
+```
+
+## 5. Call to Action
+
+**Direct CTA:** Get Your Domain → `npx builder.domains claim myproject`
+
+**Transitional CTA:** Browse available TLDs at builder.domains
+
+## 6. Success (What's at Stake)
+
+**Success looks like:**
+
+- Launch projects in minutes, not hours
+- Ship demos and prototypes with professional URLs
+- AI agents autonomously provisioning domains for new startups
+- Zero friction from idea to live URL
+- Focus on building, not infrastructure
+
+**Transformation:**
+
+From: Spending hours on domain setup for every project
+To: Instant, free domains that just work
+
+## 7. Failure (What We Help Them Avoid)
+
+**Failure looks like:**
+
+- Momentum killed by domain registration flow
+- Projects stuck with ugly deployment URLs
+- Paying for domains you'll use once for a demo
+- AI workflows blocked by manual domain steps
+- DNS propagation delays killing launch timing
+
+## 8. Brand Identity
+
+**Voice:** Simple, fast, builder-focused
+
+**Tone:** Direct, helpful, no-nonsense
+
+**Key Messages:**
+
+1. "Free domains. Instant setup. Zero friction."
+2. "Ship your project, not DNS records."
+3. "Built for builders. Built for AI."
+
+## 9. Core Capabilities
+
+| Capability | Description | Endpoint |
+|------------|-------------|----------|
+| **Instant Claim** | Claim a domain in milliseconds | `api.builder.domains/claim` |
+| **Auto SSL** | Automatic HTTPS certificates | `api.builder.domains/ssl` |
+| **DNS Management** | Simple DNS record API | `api.builder.domains/dns` |
+| **Custom TLDs** | Multiple builder-friendly TLDs | `api.builder.domains/tlds` |
+| **Wildcards** | Wildcard subdomain support | `api.builder.domains/wildcard` |
+| **Redirects** | URL forwarding and redirects | `api.builder.domains/redirect` |
+| **Analytics** | Traffic and usage analytics | `api.builder.domains/analytics` |
+| **Upgrades** | Path to custom domain ownership | `api.builder.domains/upgrade` |
+
+## 10. Messaging by Audience
+
+### For Indie Developers
+
+"Stop paying $12 for domains you'll abandon in a month. Get free builder domains for your projects, demos, and experiments. Ship faster."
+
+### For AI Agents & Automation
+
+"Programmatic domain provisioning with a simple API. No human intervention required. Let your AI launch startups with professional URLs automatically."
+
+### For Startup Studios
+
+"Give every portfolio company a professional domain instantly. No procurement delays, no registration overhead, no renewal tracking."
+
+### For Hackathon Participants
+
+"Go from idea to live demo in minutes. Claim a domain, deploy your project, impress the judges—all before lunch."

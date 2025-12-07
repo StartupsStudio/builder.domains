@@ -1,0 +1,219 @@
+---
+title: AI Agent Usage
+description: Programmatic domain management for autonomous workflows
+---
+
+# AI Agent Usage
+
+Builder Domains is designed for AI agents that need to provision domains automatically as part of autonomous startup creation.
+
+## Overview
+
+AI agents can:
+
+- Claim domains without human intervention
+- Configure DNS and SSL automatically
+- Connect to deployments programmatically
+- Manage multiple domains in bulk
+
+## Basic Agent Flow
+
+```typescript
+import { Domain } from 'builder.domains'
+import { Startup } from 'startup-builder'
+
+// AI agent creates a startup
+const startup = await Startup.create({
+  name: 'AIGeneratedStartup',
+  icp: 'developers'
+})
+
+// Automatically provision domains
+const domain = await Domain.claim({
+  name: startup.slug,
+  tld: 'build'
+})
+
+// Connect to the generated deployment
+await domain.connect({
+  target: startup.deployment.url
+})
+
+// Return the live URL
+console.log(`Startup live at: ${domain.url}`)
+```
+
+## Bulk Domain Operations
+
+```typescript
+// Claim a full domain set for a startup
+const domains = await Domain.claimForStartup(startup, {
+  tlds: ['build', 'api.build', 'app.build', 'docs.build']
+})
+
+// Result:
+// {
+//   site: 'https://mystartup.build',
+//   api: 'https://mystartup.api.build',
+//   app: 'https://mystartup.app.build',
+//   docs: 'https://mystartup.docs.build'
+// }
+```
+
+## API Authentication
+
+For agent workflows, use API keys:
+
+```typescript
+import { Domain, configure } from 'builder.domains'
+
+configure({
+  apiKey: process.env.BUILDER_DOMAINS_API_KEY
+})
+
+// All subsequent calls are authenticated
+const domain = await Domain.claim({ name: 'myproject' })
+```
+
+## Programmatic DNS
+
+```typescript
+// Set up complete DNS for a new startup
+async function configureDnsForStartup(startup) {
+  const domain = await Domain.get(startup.domain)
+
+  // Root points to site
+  await domain.dns.add({
+    type: 'CNAME',
+    name: '@',
+    value: startup.siteDeployment
+  })
+
+  // API subdomain
+  await domain.dns.add({
+    type: 'CNAME',
+    name: 'api',
+    value: startup.apiDeployment
+  })
+
+  // App subdomain
+  await domain.dns.add({
+    type: 'CNAME',
+    name: 'app',
+    value: startup.appDeployment
+  })
+
+  return domain
+}
+```
+
+## Webhook Integration
+
+Get notified when domain operations complete:
+
+```typescript
+Domain.onClaimed(async (domain) => {
+  // Domain was claimed
+  await notifyAgent('domain-claimed', domain)
+})
+
+Domain.onConnected(async (domain) => {
+  // Domain was connected to a target
+  await notifyAgent('domain-connected', domain)
+})
+```
+
+## Error Handling
+
+```typescript
+try {
+  const domain = await Domain.claim({ name: 'myproject' })
+} catch (error) {
+  if (error.code === 'DOMAIN_TAKEN') {
+    // Try alternative name
+    const altDomain = await Domain.claim({
+      name: `${name}-app`
+    })
+  } else if (error.code === 'RATE_LIMITED') {
+    // Wait and retry
+    await sleep(error.retryAfter)
+    return Domain.claim({ name })
+  }
+}
+```
+
+## MCP Integration
+
+Builder Domains exposes an MCP server for AI agent integration:
+
+```json
+{
+  "mcpServers": {
+    "builder-domains": {
+      "command": "npx",
+      "args": ["builder.domains", "mcp"]
+    }
+  }
+}
+```
+
+Available tools:
+
+- `claim_domain` - Claim a new domain
+- `check_availability` - Check if a domain is available
+- `connect_domain` - Connect domain to a target
+- `configure_dns` - Add/update DNS records
+- `list_domains` - List owned domains
+
+## Rate Limits
+
+| Plan | Claims/hour | DNS ops/hour |
+|------|-------------|--------------|
+| Free | 10 | 100 |
+| Studio | 100 | 1000 |
+| Enterprise | Unlimited | Unlimited |
+
+## Example: Full Startup Provisioning
+
+```typescript
+import { Domain } from 'builder.domains'
+import { Startup } from 'startup-builder'
+import { Sales } from 'sales-builder'
+
+async function provisionStartup(config) {
+  // 1. Create the startup
+  const startup = await Startup.create(config)
+
+  // 2. Build all components
+  await startup.build({
+    site: true,
+    app: true,
+    api: true,
+    docs: true
+  })
+
+  // 3. Provision domains
+  const domains = await Domain.claimForStartup(startup, {
+    tlds: ['build', 'api.build', 'app.build']
+  })
+
+  // 4. Connect domains to deployments
+  await domains.site.connect({ target: startup.site.url })
+  await domains.api.connect({ target: startup.api.url })
+  await domains.app.connect({ target: startup.app.url })
+
+  // 5. Initialize sales
+  const sales = await Sales.create({
+    product: startup.name,
+    domain: domains.site.url
+  })
+
+  await sales.start()
+
+  return {
+    startup,
+    domains,
+    sales
+  }
+}
+```

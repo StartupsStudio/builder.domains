@@ -1,0 +1,133 @@
+---
+title: SSL Certificates
+description: Automatic HTTPS for all domains
+---
+
+# SSL Certificates
+
+Every builder domain gets automatic SSL certificates—provisioned, renewed, and managed for you.
+
+## Automatic SSL
+
+SSL is enabled by default for all claimed domains.
+
+```typescript
+const domain = await Domain.claim({
+  name: 'myproject'
+})
+
+// SSL is already active
+console.log(domain.url)  // https://myproject.build
+```
+
+## Certificate Details
+
+```typescript
+const cert = await domain.ssl.info()
+
+// {
+//   status: 'active',
+//   issuer: 'Let\'s Encrypt',
+//   validFrom: '2024-01-01',
+//   validTo: '2024-04-01',
+//   autoRenew: true
+// }
+```
+
+## Force HTTPS
+
+HTTPS is enforced by default. HTTP requests are automatically redirected.
+
+```typescript
+// HTTP → HTTPS redirect is automatic
+// http://myproject.build → https://myproject.build
+```
+
+To disable forced HTTPS (not recommended):
+
+```typescript
+await domain.ssl.configure({
+  forceHttps: false
+})
+```
+
+## Certificate Renewal
+
+Certificates are renewed automatically before expiration.
+
+```typescript
+// Check renewal status
+const renewal = await domain.ssl.renewalStatus()
+
+// {
+//   nextRenewal: '2024-03-15',
+//   daysUntilRenewal: 14,
+//   autoRenew: true
+// }
+```
+
+## Wildcard SSL
+
+When you enable wildcard subdomains, SSL covers all subdomains automatically.
+
+```typescript
+await domain.enableWildcard()
+
+// SSL covers:
+// https://myproject.build
+// https://api.myproject.build
+// https://anything.myproject.build
+```
+
+## Custom Certificates
+
+For enterprise users, you can use your own certificates:
+
+```typescript
+await domain.ssl.custom({
+  certificate: '-----BEGIN CERTIFICATE-----...',
+  privateKey: '-----BEGIN PRIVATE KEY-----...',
+  chain: '-----BEGIN CERTIFICATE-----...'
+})
+```
+
+## Troubleshooting
+
+### Certificate Not Active
+
+```typescript
+// Check SSL status
+const status = await domain.ssl.status()
+
+if (status === 'provisioning') {
+  // Wait a few seconds, certificate is being issued
+  await new Promise(r => setTimeout(r, 5000))
+}
+
+if (status === 'failed') {
+  // Retry provisioning
+  await domain.ssl.provision()
+}
+```
+
+### Mixed Content Warnings
+
+Ensure all resources on your site use HTTPS:
+
+```html
+<!-- Good -->
+<script src="https://example.com/script.js"></script>
+
+<!-- Bad - causes mixed content warning -->
+<script src="http://example.com/script.js"></script>
+```
+
+## CLI Usage
+
+```bash
+# Check SSL status
+npx builder.domains ssl status myproject.build
+
+# Force re-provision
+npx builder.domains ssl provision myproject.build
+```

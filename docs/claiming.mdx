@@ -1,0 +1,143 @@
+---
+title: Domain Claiming
+description: Instant domain registration without friction
+---
+
+# Domain Claiming
+
+Claim domains instantly with no registration, verification, or payment.
+
+## Basic Claiming
+
+```typescript
+import { Domain } from 'builder.domains'
+
+const domain = await Domain.claim({
+  name: 'myproject'
+})
+
+// Default TLD is .build
+console.log(domain.url)  // https://myproject.build
+```
+
+## Choosing a TLD
+
+```typescript
+// Development environment
+const devDomain = await Domain.claim({
+  name: 'myproject',
+  tld: 'dev.build'
+})
+
+// Demo/prototype
+const demoDomain = await Domain.claim({
+  name: 'myproject',
+  tld: 'demo.build'
+})
+
+// API endpoint
+const apiDomain = await Domain.claim({
+  name: 'myproject',
+  tld: 'api.build'
+})
+```
+
+## Available TLDs
+
+| TLD | Purpose | Example |
+|-----|---------|---------|
+| `.build` | General projects | `myapp.build` |
+| `.dev.build` | Development/staging | `myapp.dev.build` |
+| `.demo.build` | Demos and prototypes | `myapp.demo.build` |
+| `.api.build` | API endpoints | `myapp.api.build` |
+| `.app.build` | Applications | `myapp.app.build` |
+| `.ai.build` | AI projects | `myapp.ai.build` |
+
+## Checking Availability
+
+```typescript
+const available = await Domain.check('myproject')
+
+if (available) {
+  const domain = await Domain.claim({ name: 'myproject' })
+} else {
+  console.log('Domain already claimed')
+}
+```
+
+## Claim Multiple Domains
+
+```typescript
+// Claim a set of domains for a project
+const domains = await Domain.claimSet({
+  name: 'myproject',
+  tlds: ['build', 'api.build', 'app.build', 'dev.build']
+})
+
+// domains.build = https://myproject.build
+// domains.api = https://myproject.api.build
+// domains.app = https://myproject.app.build
+// domains.dev = https://myproject.dev.build
+```
+
+## Domain Naming Rules
+
+- **Minimum length:** 3 characters
+- **Maximum length:** 63 characters
+- **Allowed characters:** a-z, 0-9, hyphens
+- **Cannot start or end with:** hyphen
+- **Reserved names:** Some names are reserved (api, www, admin, etc.)
+
+```typescript
+// Valid names
+'myproject'
+'my-cool-app'
+'startup123'
+
+// Invalid names
+'ab'           // Too short
+'-myproject'   // Starts with hyphen
+'my project'   // Contains space
+```
+
+## Claiming for Organizations
+
+```typescript
+const domain = await Domain.claim({
+  name: 'myproject',
+  organization: 'my-org-id'
+})
+```
+
+## Domain Ownership
+
+Domains are owned by:
+
+1. **Anonymous:** If no auth, tied to device/IP
+2. **Account:** If authenticated, tied to your account
+3. **Organization:** If org specified, owned by the org
+
+```typescript
+// Authenticate for persistent ownership
+import { auth } from 'builder.domains'
+
+await auth.login()
+
+const domain = await Domain.claim({
+  name: 'myproject'
+})
+
+// Domain is now tied to your account
+```
+
+## Release & Transfer
+
+```typescript
+// Release a domain
+await domain.release()
+
+// Transfer to another account
+await domain.transfer({
+  to: 'other-account-id'
+})
+```

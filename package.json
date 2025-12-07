@@ -1,0 +1,53 @@
+{
+  "name": "builder.domains",
+  "version": "0.1.0",
+  "description": "Free domain names for builders and AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/api.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "rpc.do": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "domains",
+    "dns",
+    "free",
+    "builder",
+    "ai",
+    "startup",
+    "subdomain"
+  ],
+  "author": "Startups.Studio",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StartupsStudio/builder.domains.git"
+  },
+  "homepage": "https://builder.domains",
+  "bugs": {
+    "url": "https://github.com/StartupsStudio/builder.domains/issues"
+  }
+}

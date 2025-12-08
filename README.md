@@ -267,9 +267,10 @@ export default defineConfig({
 
 | Package | Description |
 |---------|-------------|
-| [startup-builder](https://github.com/StartupsStudio/startup-builder) | Build autonomous startups |
-| [sales-builder](https://github.com/StartupsStudio/sales-builder) | Autonomous sales workflows |
-| [startup.games](https://github.com/StartupsStudio/startup.games) | Gamification for founders |
+| [startup-builder](https://npmjs.com/package/startup-builder) | Build autonomous startups |
+| [sales-builder](https://npmjs.com/package/sales-builder) | Autonomous sales workflows |
+| [service-builder](https://npmjs.com/package/service-builder) | AI-delivered Services-as-Software |
+| [startup.games](https://npmjs.com/package/startup.games) | Gamification for founders |
 
 ## License
 
